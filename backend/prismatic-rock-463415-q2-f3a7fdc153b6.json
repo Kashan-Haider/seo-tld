@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "prismatic-rock-463415-q2",
+  "private_key_id": "f3a7fdc153b68e592ae463bffc94424045610c2b",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCZuJu5Wf1JVlfa\n9G/bOirCG5yk3L4f6BfEu30Mi7Fn5kQ1cwVPkcaGBC5kejBk8FjabNdjGieu6mnW\np0cAsQ85HF1P1Urw+rwsxsP53TFErNR6DiedDwgj6OAc2T2wYNbDt2QjU6bAH3xB\nJeQbl9TK3sOwQq4wrxWvYirqpLVimL3NAvwd0lmdUfQNqhSUlKYWrAnwWosBqU4S\nQ/Usu3RUNWSWVoF2Lda62AJUp2mipqnKu+3HUBiOSBUFYuOs8w53USGURzn4mQEp\n7zLBNZ6EHmAluDiRM8UW3B32GRhnhccsyCJsqZwJAmS+wyqmcwZWLmCzSZeZ3OSP\ncbsmS4D7AgMBAAECggEAMDk9RQrpjimzmwFG2/fl9QnzfLaxQFIvrqyAoMBsEaOn\nrzrbpigdpupF4YiBiRDrVu6BLVpFq7ZnKItGl310QJ7Y2RQZE/scsFFUppyQ+bHc\nYEPzgm52R8mlEPfHxf7DMRflpr112NynvspTwqJBg7kZm8B3Y9dxTplVzFGKg5jZ\nqrPwUvAXPHCY71lT7/yo6QIW6a0LaRrXG+rtHtLHZzL28cJOaCcydV6KF/MrsmKU\nMOK5aMOkOrUp1tEE6cH/uWMjAeQBinacIKxPLUp2EWxM2w9QtrUgQw7uOi9TCk/K\noOwt9PXhAEuguYfknTtB3TaBOlE2hcC87eI1o8wFWQKBgQDJpReSJUbZ7Wip0Oma\nBMXF2uw/LzF5R9SsnwN45CQoomkPpyDH6f91mJQ8/sD2abmCAwosJQ1/HkwZwoJJ\nuO1P2yKUPzNr7MvopPUesPRC+LMLLTvd9MBvG2hDcES4tbQLlk7icI4IpXz7kUoH\nhkqJCxjl0pTgCUvO0i5JpmurqQKBgQDDKHD1LQE9U1wyDPWIH7kmJ1QWCku6NR+0\nj2+Qk6BAeDkrhHPQHeIOOT6Kpqb1DIhjrEoPvK6UjVJe3MNUtMAaRkEv82M9ubfI\nm3vp62pTSMxbqK/oGve4674MrThDtTIdmTDDmna8H0jO79ebLtpMSkazwMF1BGhV\npvX2a8NOAwKBgBxLWh9bs7FoqsMJWX4PJWE58uR6zsph1enS9j3EZX5+K5fSr7rd\njscFfeeBJ7pr42fm3UqMeHRZ3/vNW1LU7BfEe/mpVKHUPFiMrQh9dAjhtN3gnwHq\nEgaFJgAwhLQWawklMjR77rIv5nW2UVj08wh/0iKNhe5Z35VJ0Mzs2TbhAoGAHO36\nyK1yOJgJ27WGFDa3qIs98MJ39VN4rrhwjlsD72qi9ut8i4ZSg09DESShLUQ9V6Er\nnWeX7ZeBdWR+ZCkjLQHrGeOXe4fzUX6TANsP+OaavJ+l699Lh5MSqihnZcoPcsnJ\nq8VTApIUpfBx4qQwYgzErFLPmrwbh07nuS7CVecCgYA2G/5Dmsc9Qed1SWIQtrZR\neudSUkHMiBvnZrEomCM+ObSrrcsgEjyT2QiQY7iU0gQY8vRGWSp92EVG32v9n6ux\ntSjZ/uuRsrMHV8hzqgbZJvfCdCAwtId8NUUE7mMoTEPFUoSH0ZG5QVkT+AaeTN9x\nEf2+Y5s85ebKtWR+zCPg5A==\n-----END PRIVATE KEY-----\n",
+  "client_email": "tldseo@prismatic-rock-463415-q2.iam.gserviceaccount.com",
+  "client_id": "113417583978073272435",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/tldseo%40prismatic-rock-463415-q2.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
