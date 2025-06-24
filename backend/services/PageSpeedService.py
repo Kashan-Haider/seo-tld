@@ -20,7 +20,7 @@ class PageSpeedService:
             'prettyPrint': 'false',
             'category': categories
         }
-        timeout = httpx.Timeout(300.0)  # 5 minutes timeout
+        timeout = httpx.Timeout(300.0)
         try:
             async with httpx.AsyncClient(timeout=timeout) as client:
                 response = await client.get(self.base_url, params=params)
@@ -29,9 +29,7 @@ class PageSpeedService:
             raise Exception("PageSpeed API timed out. Try again or increase the timeout.")
         
         if 'lighthouseResult' not in data:
-            # Try to extract error message from API response
             api_error = data.get('error', {}).get('message', str(data))
             raise Exception(f"PageSpeed API response missing 'lighthouseResult': {api_error}")
         
-        # Return the full lighthouseResult JSON for maximum detail
         return data['lighthouseResult']

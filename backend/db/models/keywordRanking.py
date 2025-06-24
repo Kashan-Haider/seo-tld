@@ -15,8 +15,6 @@ class KeywordRanking(Base):
     ctr = Column(Float)
     date_tracked = Column(DateTime(timezone=True), server_default=func.now())
     
-    # Foreign Keys
     keyword_id = Column(Integer, ForeignKey("keywords.id"), nullable=False)
     
-    # Relationships
     keyword = relationship("Keyword", back_populates="rankings")

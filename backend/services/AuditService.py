@@ -6,9 +6,8 @@ from db.models.Schemas import AuditResult, AuditRequest, AuditReportResponse, Pa
 from db.models.auditReport import AuditReport
 from db.models.project import Project
 from db.database import get_db
-from fastapi import Depends, HTTPException
+from fastapi import HTTPException
 import traceback
-import httpx
 
 class AuditService:
     def __init__(self):
@@ -16,17 +15,14 @@ class AuditService:
     
     async def generate_audit(self, request: AuditRequest, db: Session) -> AuditResult:
         try:
-            # Get project details
             project = db.query(Project).filter(Project.id == request.project_id).first()
             if not project:
                 raise HTTPException(status_code=404, detail="Project not found")
             
-            # Get PageSpeed data for mobile and desktop
             categories = ["performance", "accessibility", "best-practices", "seo", "pwa"]
             mobile_lighthouse = await self.pagespeed.analyze_page(str(project.website_url), "mobile", categories=categories)
             desktop_lighthouse = await self.pagespeed.analyze_page(str(project.website_url), "desktop", categories=categories)
 
-            # Extract summary metrics for backward compatibility
             def extract_summary(lh):
                 audits = lh.get('audits', {})
                 categories_obj = lh.get('categories', {})
@@ -66,7 +62,6 @@ class AuditService:
                         'score': a.get('score', 0)
                     } for a in audits.values() if a.get('scoreDisplayMode') == 'informative' and a.get('score') is not None] if audits else []
                 )
-                # Ensure types and avoid lists for numeric fields
                 val = score_val * 100
                 if isinstance(val, (int, float)):
                     summary['performance_score'] = int(round(val))
@@ -74,24 +69,21 @@ class AuditService:
                     summary['performance_score'] = 0
                 for k in ['fcp', 'lcp', 'cls', 'fid', 'ttfb']:
                     v = summary.get(k, 0.0)
-                    if isinstance(v, (int, float)):
-                        summary[k] = float(v)
-                    else:
+                    if not isinstance(v, (int, float)):
                         summary[k] = 0.0
                 for k in ['opportunities', 'diagnostics']:
                     if not isinstance(summary[k], list):
                         summary[k] = []
                 return summary
-            mobile_data = SchemaPageSpeedData(**extract_summary(mobile_lighthouse))
-            desktop_data = SchemaPageSpeedData(**extract_summary(desktop_lighthouse))
+            mobile_summary = extract_summary(mobile_lighthouse)
+            desktop_summary = extract_summary(desktop_lighthouse)
+            mobile_data = SchemaPageSpeedData(**mobile_summary)
+            desktop_data = SchemaPageSpeedData(**desktop_summary)
             
-            # Calculate overall score
             overall_score = self._calculate_overall_score(mobile_data, desktop_data)
             
-            # Generate recommendations
             recommendations = self._generate_recommendations(mobile_data, desktop_data)
             
-            # Save audit to database
             audit_report = AuditReport(
                 project_id=project.id,
                 audit_type=request.audit_type,
@@ -141,7 +133,6 @@ class AuditService:
         return [AuditReportResponse.from_orm(audit) for audit in audits]
     
     def _calculate_overall_score(self, mobile_data, desktop_data) -> int:
-        # Weight: Mobile 60%, Desktop 40%
         mobile_weight = 0.6
         desktop_weight = 0.4
         overall = (
@@ -152,7 +143,6 @@ class AuditService:
     
     def _generate_recommendations(self, mobile_data, desktop_data) -> list:
         recommendations = []
-        # Performance recommendations
         if mobile_data.performance_score < 50:
             recommendations.append("Critical: Mobile performance needs immediate attention")
         if mobile_data.lcp > 4.0:
@@ -161,7 +151,6 @@ class AuditService:
             recommendations.append("Fix Cumulative Layout Shift (CLS) issues for better user experience")
         if mobile_data.fcp > 3.0:
             recommendations.append("Improve First Contentful Paint (FCP) loading time")
-        # Desktop recommendations
         if desktop_data.performance_score < 50:
             recommendations.append("Critical: Desktop performance needs immediate attention")
         if desktop_data.lcp > 4.0:
@@ -171,22 +160,3 @@ class AuditService:
         if desktop_data.fcp > 3.0:
             recommendations.append("Improve Desktop First Contentful Paint (FCP) loading time")
         return recommendations[:10]
-
-# if __name__ == "__main__":
-#     import asyncio
-#     from db.database import get_db
-#     from sqlalchemy.orm import Session
-
-#     # Get a real database session
-#     db_gen = get_db()
-#     db: Session = next(db_gen)
-
-#     audit_service = AuditService()
-#     async def test_audit():
-#         result = await audit_service.generate_audit(
-#             AuditRequest(project_id="2a02cbb8-2f58-4ac5-beb0-ceee93964083", audit_type="full"),
-#             db=db
-#         )
-#         print(result)
-
-#     asyncio.run(test_audit())

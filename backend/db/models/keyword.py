@@ -18,9 +18,7 @@ class Keyword(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
-    # Foreign Keys
     project_id = Column(String(36), ForeignKey("projects.id"), nullable=False)
     
-    # Relationships
     project = relationship("Project", back_populates="keywords")
     rankings = relationship("KeywordRanking", back_populates="keyword", cascade="all, delete-orphan")
