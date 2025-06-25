@@ -29,6 +29,7 @@ const Dashboard: React.FC = () => {
       setError('');
       try {
         const token = localStorage.getItem('access_token');
+        console.log(token)
         const res = await fetch('/api/project/all-projects', {
           headers: {
             'Authorization': `Bearer ${token}`,

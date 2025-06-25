@@ -84,6 +84,16 @@ class CompetitorAnalysisResponse(CompetitorAnalysisBase):
         from_attributes = True
 
 # PageSpeed Data Schema
+class Opportunity(BaseModel):
+    title: str
+    description: str
+    savings_ms: float
+
+class Diagnostic(BaseModel):
+    title: str
+    description: str
+    score: float
+
 class PageSpeedData(BaseModel):
     performance_score: int
     fcp: float
@@ -91,8 +101,23 @@ class PageSpeedData(BaseModel):
     cls: float
     fid: float
     ttfb: float
-    opportunities: List[Dict]
-    diagnostics: List[Dict]
+    opportunities: List[Opportunity]
+    diagnostics: List[Diagnostic]
+
+class LighthouseCategory(BaseModel):
+    score: Optional[float]
+    title: str
+    description: Optional[str] = None
+
+class LighthouseData(BaseModel):
+    finalUrl: str
+    fetchTime: str
+    categories: Dict[str, LighthouseCategory]
+    configSettings: Dict
+    environment: Dict
+    runWarnings: Optional[List[str]] = None
+    categoryGroups: Optional[Dict] = None
+    auditRefs: Optional[Dict] = None
 
 # Audit Schemas (no Search Console)
 class AuditResult(BaseModel):
@@ -102,8 +127,8 @@ class AuditResult(BaseModel):
     pagespeed_desktop: PageSpeedData
     overall_score: int
     recommendations: List[str]
-    lighthouse_mobile: Optional[Dict] = None
-    lighthouse_desktop: Optional[Dict] = None
+    lighthouse_mobile: Optional[LighthouseData] = None
+    lighthouse_desktop: Optional[LighthouseData] = None
 
 class AuditRequest(BaseModel):
     project_id: str
@@ -111,7 +136,7 @@ class AuditRequest(BaseModel):
 
 class AuditReportResponse(BaseModel):
     id: int
-    project_id: int
+    project_id: str
     audit_type: str
     overall_score: Optional[int] = None
     mobile_performance_score: Optional[int] = None

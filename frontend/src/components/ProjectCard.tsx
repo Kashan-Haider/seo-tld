@@ -21,7 +21,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
 
   return (
     <div
-      className="flex flex-col justify-between bg-white/5 rounded-2xl px-8 py-7 shadow border border-white/10 hover:bg-accent-blue/10 transition min-h-[200px] gap-3"
+      className="sm:w-[450px] flex flex-col justify-between bg-white/5 rounded-2xl px-8 py-7 shadow border border-white/10 hover:bg-accent-blue/10 transition min-h-[200px] gap-3"
     >
       <div className="flex items-center gap-3 mb-2">
         <Folder className="text-accent-blue" size={32} />
@@ -31,7 +31,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
       <div className="flex items-center gap-2 text-sm text-light-gray mb-2">
         <span className="text-accent-blue">Created:</span> {formattedDate}
       </div>
-      <div className="flex items-center gap-2 mt-auto">
+      <div className="flex items-center gap-5 mt-auto">
         <a
           href={project.website_url}
           target="_blank"

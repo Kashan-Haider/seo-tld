@@ -2,7 +2,7 @@
 from datetime import datetime
 from sqlalchemy.orm import Session
 from services.PageSpeedService import PageSpeedService
-from db.models.Schemas import AuditResult, AuditRequest, AuditReportResponse, PageSpeedData as SchemaPageSpeedData
+from db.models.Schemas import AuditResult, AuditRequest, AuditReportResponse, PageSpeedData as SchemaPageSpeedData, Opportunity, Diagnostic, LighthouseData
 from db.models.auditReport import AuditReport
 from db.models.project import Project
 from db.database import get_db
@@ -44,6 +44,32 @@ class AuditService:
                         score_val = 0.0
                 else:
                     score_val = 0.0
+                # Build opportunities and diagnostics as list of dicts
+                opportunities = []
+                for a in audits.values():
+                    savings = a.get('details', {}).get('overallSavingsMs', 0)
+                    if savings > 100:
+                        try:
+                            op = Opportunity(
+                                title=a.get('title', ''),
+                                description=a.get('description', ''),
+                                savings_ms=float(savings)
+                            )
+                            opportunities.append(op.dict())
+                        except Exception:
+                            pass
+                diagnostics = []
+                for a in audits.values():
+                    if a.get('scoreDisplayMode') == 'informative' and a.get('score') is not None:
+                        try:
+                            diag = Diagnostic(
+                                title=a.get('title', ''),
+                                description=a.get('description', ''),
+                                score=float(a.get('score', 0))
+                            )
+                            diagnostics.append(diag.dict())
+                        except Exception:
+                            pass
                 summary = dict(
                     performance_score=int(round(score_val * 100)),
                     fcp=float(round(safe_float(audits.get('first-contentful-paint', {}).get('numericValue', 0)) / 1000, 2)) if audits.get('first-contentful-paint', {}).get('numericValue') is not None else 0.0,
@@ -51,34 +77,60 @@ class AuditService:
                     cls=float(round(safe_float(audits.get('cumulative-layout-shift', {}).get('numericValue', 0)), 3)) if audits.get('cumulative-layout-shift', {}).get('numericValue') is not None else 0.0,
                     fid=float(round(safe_float(audits.get('max-potential-fid', {}).get('numericValue', 0)), 1)) if audits.get('max-potential-fid', {}).get('numericValue') is not None else 0.0,
                     ttfb=float(round(safe_float(audits.get('server-response-time', {}).get('numericValue', 0)), 1)) if audits.get('server-response-time', {}).get('numericValue') is not None else 0.0,
-                    opportunities=[{
-                        'title': a.get('title', ''),
-                        'description': a.get('description', ''),
-                        'savings_ms': a.get('details', {}).get('overallSavingsMs', 0)
-                    } for a in audits.values() if a.get('details', {}).get('overallSavingsMs', 0) > 100] if audits else [],
-                    diagnostics=[{
-                        'title': a.get('title', ''),
-                        'description': a.get('description', ''),
-                        'score': a.get('score', 0)
-                    } for a in audits.values() if a.get('scoreDisplayMode') == 'informative' and a.get('score') is not None] if audits else []
+                    opportunities=opportunities,
+                    diagnostics=diagnostics
                 )
-                val = score_val * 100
-                if isinstance(val, (int, float)):
-                    summary['performance_score'] = int(round(val))
-                else:
-                    summary['performance_score'] = 0
-                for k in ['fcp', 'lcp', 'cls', 'fid', 'ttfb']:
-                    v = summary.get(k, 0.0)
-                    if not isinstance(v, (int, float)):
-                        summary[k] = 0.0
-                for k in ['opportunities', 'diagnostics']:
-                    if not isinstance(summary[k], list):
-                        summary[k] = []
                 return summary
+
+            def extract_lighthouse_useful(lh):
+                return {
+                    'finalUrl': lh.get('finalUrl'),
+                    'fetchTime': lh.get('fetchTime'),
+                    'categories': {
+                        k: {
+                            'score': v.get('score'),
+                            'title': v.get('title'),
+                            'description': v.get('description', None)
+                        } for k, v in lh.get('categories', {}).items()
+                    },
+                    'configSettings': lh.get('configSettings'),
+                    'environment': lh.get('environment'),
+                    'runWarnings': lh.get('runWarnings'),
+                    'categoryGroups': lh.get('categoryGroups'),
+                    'auditRefs': lh.get('categoryGroups'),
+                }
+
             mobile_summary = extract_summary(mobile_lighthouse)
             desktop_summary = extract_summary(desktop_lighthouse)
-            mobile_data = SchemaPageSpeedData(**mobile_summary)
-            desktop_data = SchemaPageSpeedData(**desktop_summary)
+            def safe_get(d, k, typ, default):
+                v = d.get(k, default)
+                if isinstance(v, typ):
+                    return v
+                try:
+                    return typ(v)
+                except Exception:
+                    return default
+
+            mobile_data = SchemaPageSpeedData(
+                performance_score=safe_get(mobile_summary, 'performance_score', int, 0),
+                fcp=safe_get(mobile_summary, 'fcp', float, 0.0),
+                lcp=safe_get(mobile_summary, 'lcp', float, 0.0),
+                cls=safe_get(mobile_summary, 'cls', float, 0.0),
+                fid=safe_get(mobile_summary, 'fid', float, 0.0),
+                ttfb=safe_get(mobile_summary, 'ttfb', float, 0.0),
+                opportunities=mobile_summary['opportunities'] if isinstance(mobile_summary['opportunities'], list) else [],
+                diagnostics=mobile_summary['diagnostics'] if isinstance(mobile_summary['diagnostics'], list) else []
+            )
+            desktop_data = SchemaPageSpeedData(
+                performance_score=safe_get(desktop_summary, 'performance_score', int, 0),
+                fcp=safe_get(desktop_summary, 'fcp', float, 0.0),
+                lcp=safe_get(desktop_summary, 'lcp', float, 0.0),
+                cls=safe_get(desktop_summary, 'cls', float, 0.0),
+                fid=safe_get(desktop_summary, 'fid', float, 0.0),
+                ttfb=safe_get(desktop_summary, 'ttfb', float, 0.0),
+                opportunities=desktop_summary['opportunities'] if isinstance(desktop_summary['opportunities'], list) else [],
+                diagnostics=desktop_summary['diagnostics'] if isinstance(desktop_summary['diagnostics'], list) else []
+            )
             
             overall_score = self._calculate_overall_score(mobile_data, desktop_data)
             
@@ -116,8 +168,8 @@ class AuditService:
                 pagespeed_desktop=desktop_data,
                 overall_score=overall_score,
                 recommendations=recommendations,
-                lighthouse_mobile=mobile_lighthouse,
-                lighthouse_desktop=desktop_lighthouse
+                lighthouse_mobile=LighthouseData(**extract_lighthouse_useful(mobile_lighthouse)),
+                lighthouse_desktop=LighthouseData(**extract_lighthouse_useful(desktop_lighthouse))
             )
         except HTTPException:
             raise
@@ -125,7 +177,7 @@ class AuditService:
             traceback.print_exc()
             raise HTTPException(status_code=500, detail=f"Internal server error: {e}")
     
-    def get_audit_history(self, project_id: int, db: Session) -> list[AuditReportResponse]:
+    def get_audit_history(self, project_id: str, db: Session) -> list[AuditReportResponse]:
         audits = db.query(AuditReport).filter(
             AuditReport.project_id == project_id
         ).order_by(AuditReport.created_at.desc()).all()

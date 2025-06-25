@@ -21,13 +21,12 @@ class AuditReport(Base):
     
     # Overall Scores
     overall_score = Column(Integer)
-    technical_score = Column(Integer)
-    content_score = Column(Integer)
     
     # Detailed data (JSON fields)
     pagespeed_data = Column(JSON)
     recommendations = Column(JSON)
-    issues_found = Column(JSON)
+    lighthouse_mobile = Column(JSON)
+    lighthouse_desktop = Column(JSON)
     
     # Audit metadata
     audit_date_start = Column(DateTime(timezone=True))
