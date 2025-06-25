@@ -8,6 +8,9 @@ import VerifyEmail from './pages/auth/VerifyEmail';
 import CheckEmail from './pages/auth/CheckEmail';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
+import Home from './pages/Dashboard';
+import Sidebar from './components/Sidebar';
+import Projects from './pages/Projects';
 
 
 
@@ -173,71 +176,12 @@ const ProtectedLayout: React.FC = () => {
     );
   }
 
-  return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
-};
-
-// Dashboard component with user info and logout
-const Dashboard = () => {
-  const { user, logout, login } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  // Handle token in query param
-  React.useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const token = params.get('token');
-    if (token) {
-      login(token);
-      // Remove token from URL after saving
-      params.delete('token');
-      navigate({ pathname: '/', search: params.toString() }, { replace: true });
-    }
-  }, [location.search, login, navigate]);
-
-  const handleLogout = () => {
-    logout();
-  };
-
-  const handleCreateProject = () => {
-    navigate('/create-project');
-  };
-
-  return (
-    <div className="min-h-screen bg-dark-blue p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-          <div className="flex gap-4">
-            <button
-              onClick={handleCreateProject}
-              className="bg-accent-blue text-white px-4 py-2 rounded-lg hover:bg-light-purple transition-colors"
-            >
-              Create Project
-            </button>
-            <button
-              onClick={handleLogout}
-              className="bg-medium-blue text-white px-4 py-2 rounded-lg hover:bg-light-purple transition-colors border border-light-gray/20"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-        
-        <div className="bg-medium-blue rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-white mb-4">Welcome!</h2>
-          {user && (
-            <div className="text-light-gray space-y-2">
-              <p><strong>Email:</strong> {user.email}</p>
-              <p><strong>User ID:</strong> {user.id}</p>
-            </div>
-          )}
-          <p className="text-light-gray mt-4">
-            This is a protected page. You can only see this if you're authenticated.
-          </p>
-        </div>
-      </div>
+  return isAuthenticated ? (
+    <div className="min-h-screen w-full flex flex-col md:flex-row bg-dark-blue">
+      <Sidebar />
+      <Outlet />
     </div>
-  );
+  ) : <Navigate to="/login" replace />;
 };
 
 const App = () => {
@@ -255,15 +199,17 @@ const App = () => {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           
+          
           {/* Protected routes */}
           <Route element={<ProtectedLayout />}>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/" element={<Home />} />
             <Route path="/create-project" element={<CreateProject />} />
+            <Route path="/projects" element={<Projects/>} />
+            <Route path="/project/:id" element={<div>Project Details Page (Coming Soon)</div>} />
             {/* Add more protected routes here */}
           </Route>
 
-          {/* Redirect root to dashboard if authenticated, otherwise to login */}
+          {/* Redirect root to home if not matched */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
