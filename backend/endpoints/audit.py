@@ -16,17 +16,8 @@ async def create_audit(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Create a new audit request. Requires authentication.
-    """
     try:
-        # You can optionally associate the audit with the current user
-        # by adding user_id to the request or audit result
         result = await audit_service.generate_audit(request, db)
-        
-        # Optionally add user information to the result
-        # result.user_id = current_user.id
-        
         return result
     except Exception as e:
         traceback.print_exc()
@@ -40,12 +31,7 @@ async def get_user_audits(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Get all audits for the current user. Requires authentication.
-    """
     try:
-        # TODO: Implement user-specific audit retrieval
-        # This would typically query the database for audits associated with current_user.id
         return {
             "message": "User audits endpoint - implementation pending",
             "user_id": current_user.id,
@@ -55,4 +41,4 @@ async def get_user_audits(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve user audits: {str(e)}"
-        ) 
+        )
