@@ -53,8 +53,7 @@ const Login: React.FC = () => {
   };
 
   const handleForgotPassword = () => {
-    // TODO: Implement forgot password functionality
-    setError('Forgot password functionality coming soon!');
+    navigate('/forgot-password');
   };
 
   return (
@@ -154,6 +153,14 @@ const Login: React.FC = () => {
               className="text-accent-blue hover:underline font-medium"
             >
               Sign up
+            </button>
+          </p>
+          <p className="text-light-gray text-sm mt-2">
+            <button
+              onClick={() => navigate('/forgot-password')}
+              className="text-accent-blue hover:underline font-medium"
+            >
+              Forgot password?
             </button>
           </p>
         </div>

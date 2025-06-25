@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request, Header, 
 from sqlalchemy.orm import Session
 from db.models.user import User
 from db.database import get_db
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, constr, Field
 from core.hashing import Hasher
 from core import jwt as jwt_utils
 from typing import Optional
@@ -43,6 +43,13 @@ class TokenValidationResponse(BaseModel):
 
 class ResendVerificationRequest(BaseModel):
     email: EmailStr
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str = Field(..., min_length=8)
 
 @router.post("/signup")
 def signup(user: SignupRequest, db: Session = Depends(get_db)):
@@ -168,7 +175,7 @@ def validate_token(Authorization: str = Header(...), db: Session = Depends(get_d
             return TokenValidationResponse(valid=False, message="User email mismatch")
         exp_timestamp = payload.get("exp")
         if exp_timestamp:
-            exp_datetime = datetime.fromtimestamp(exp_timestamp)
+            exp_datetime = datetime.fromtimestamp(exp_timestamp, tz=timezone.utc)
             now = datetime.now(timezone.utc)
             if now > exp_datetime:
                 return TokenValidationResponse(valid=False, message="Token has expired")
@@ -183,30 +190,40 @@ class RefreshTokenRequest(BaseModel):
 def refresh_token(request: RefreshTokenRequest, db: Session = Depends(get_db)):
     try:
         payload = jwt_utils.verify_access_token(request.access_token)
+        print("REFRESH PAYLOAD:", payload)
         if not payload:
+            print("No payload")
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
         user_id = payload.get("sub")
         email = payload.get("email")
+        print("user_id:", user_id, "email:", email)
         if not user_id or not email:
+            print("Missing user_id or email")
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token payload missing required user information")
         user = db.query(User).filter(User.id == user_id).first()
+        print("User from DB:", user)
         if not user:
+            print("User not found")
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User no longer exists")
         if user.email != email:
+            print("Email mismatch:", user.email, email)
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User email mismatch")
         exp_timestamp = payload.get("exp")
         if exp_timestamp:
-            exp_datetime = datetime.fromtimestamp(exp_timestamp)
+            exp_datetime = datetime.fromtimestamp(exp_timestamp, tz=timezone.utc)
             now = datetime.now(timezone.utc)
             time_until_expiry = exp_datetime - now
             if time_until_expiry.total_seconds() > 300:
+                print("Token not close to expiry")
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Token is not close to expiration. Refresh only when needed.")
         new_payload = {"sub": user_id, "email": email}
         new_token = jwt_utils.create_access_token(new_payload)
+        print("New token created")
         return TokenResponse(access_token=new_token, token_type="bearer")
     except HTTPException:
         raise
     except Exception as e:
+        print("Exception in refresh-token:", e)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Token refresh error: {str(e)}")
 
 def get_current_user(Authorization: str = Header(...), db: Session = Depends(get_db)) -> User:
@@ -228,7 +245,7 @@ def get_current_user(Authorization: str = Header(...), db: Session = Depends(get
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User email mismatch")
         exp_timestamp = payload.get("exp")
         if exp_timestamp:
-            exp_datetime = datetime.fromtimestamp(exp_timestamp)
+            exp_datetime = datetime.fromtimestamp(exp_timestamp, tz=timezone.utc)
             now = datetime.now(timezone.utc)
             if now > exp_datetime:
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has expired")
@@ -284,3 +301,39 @@ def resend_verification(request: ResendVerificationRequest, db: Session = Depend
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to send verification email: {str(e)}")
     return {"message": "Verification email resent. Please check your inbox."}
+
+@router.post("/forgot-password")
+def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == request.email).first()
+    # Always return generic message
+    message = "If an account with that email exists, a password reset link has been sent."
+    if not user:
+        return {"message": message}
+    reset_token = secrets.token_urlsafe(32)
+    expiry = datetime.now(timezone.utc) + timedelta(hours=1)
+    user.reset_password_token = reset_token #type:ignore
+    user.reset_password_token_expiry = expiry #type:ignore
+    try:
+        reset_link = f"http://localhost:5173/reset-password?token={reset_token}"
+        EmailService.send_password_reset_email(str(getattr(user, 'email')), reset_link)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        # Still return generic message
+        return {"message": message}
+    return {"message": message}
+
+@router.post("/reset-password")
+def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.reset_password_token == request.token).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token.")
+    expiry = getattr(user, 'reset_password_token_expiry', None)
+    if expiry is None or datetime.now(timezone.utc) > expiry:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token.")
+    # Set new password
+    user.hashed_password = Hasher.get_password_hash(request.new_password) #type:ignore
+    user.reset_password_token = None #type:ignore
+    user.reset_password_token_expiry = None #type:ignore
+    db.commit()
+    return {"message": "Password has been reset successfully. You can now log in."}

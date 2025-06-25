@@ -6,6 +6,8 @@ import CreateProject from './pages/projects/CreateProject';
 import AuthCallback from './pages/auth/AuthCallback'; // make sure this path is correct
 import VerifyEmail from './pages/auth/VerifyEmail';
 import CheckEmail from './pages/auth/CheckEmail';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
 
 
 
@@ -250,6 +252,8 @@ const App = () => {
           <Route path="/signup" element={<Signup />} />
           <Route path="/auth/verify" element={<VerifyEmail />} />
           <Route path="/check-email" element={<CheckEmail />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           
           {/* Protected routes */}
           <Route element={<ProtectedLayout />}>
