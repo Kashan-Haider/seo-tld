@@ -8,6 +8,7 @@ class UserBase(BaseModel):
     email: EmailStr
     username: str
     full_name: Optional[str] = None
+    is_verified: Optional[bool] = None
 
 class UserCreate(UserBase):
     password: str
@@ -16,6 +17,7 @@ class UserResponse(UserBase):
     id: int
     is_premium: bool
     created_at: datetime
+    is_verified: Optional[bool] = None
     
     class Config:
         from_attributes = True

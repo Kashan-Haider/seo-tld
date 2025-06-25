@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+@theme {
+  --color-dark-blue: #0f1535;        /* Main background */
+  --color-medium-blue: #1e2a5a;      /* Card background */
+  --color-accent-blue: #3b82f6;      /* Accent, buttons, graphs */
+  --color-light-purple: #7c3aed;     /* Glow, accent */
+  --color-neon-cyan: #22d3ee;        /* Progress, highlights */
+  --color-white: #ffffff;            /* Text, icons */
+  --color-light-gray: #a3aed6;       /* Secondary text */
+}

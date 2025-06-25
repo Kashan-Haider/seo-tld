@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Header, Body
 from sqlalchemy.orm import Session
 from db.models.user import User
 from db.database import get_db
@@ -6,11 +6,18 @@ from pydantic import BaseModel, EmailStr
 from core.hashing import Hasher
 from core import jwt as jwt_utils
 from typing import Optional
-from datetime import timedelta
+from datetime import timedelta, datetime, timezone
 from authlib.integrations.starlette_client import OAuth
 from starlette.config import Config
 from starlette.responses import RedirectResponse
 import os
+from dotenv import load_dotenv
+import secrets
+from services.EmailService import EmailService
+from fastapi.responses import RedirectResponse
+
+# Load environment variables
+load_dotenv()
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -29,26 +36,56 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
+class TokenValidationResponse(BaseModel):
+    valid: bool
+    payload: Optional[dict] = None
+    user_id: Optional[str] = None
+    email: Optional[str] = None
+    message: Optional[str] = None
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+
 # --- Signup Endpoint ---
-@router.post("/signup", response_model=TokenResponse)
+@router.post("/signup")
 def signup(user: SignupRequest, db: Session = Depends(get_db)):
-    db_user_by_email = db.query(User).filter(User.email == user.email).first()
-    if db_user_by_email:
+    # Check if user already exists
+    existing_user = db.query(User).filter(User.email == user.email).first()
+    if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
-    db_user_by_username = db.query(User).filter(User.username == user.username).first()
-    if db_user_by_username:
+    
+    # Check if username already exists
+    existing_username = db.query(User).filter(User.username == user.username).first()
+    if existing_username:
         raise HTTPException(status_code=400, detail="Username already taken")
-    new_user = User(
+    
+    # Generate verification token and expiry (timezone-aware UTC)
+    verification_token = secrets.token_urlsafe(32)
+    verification_token_expiry = datetime.now(timezone.utc) + timedelta(hours=3)
+    
+    # Create new user (not verified yet)
+    hashed_password = Hasher.get_password_hash(user.password)
+    db_user = User(
         username=user.username,
         email=user.email,
-        hashed_password=Hasher.get_password_hash(user.password),
-        full_name=user.full_name
+        hashed_password=hashed_password,
+        full_name=user.full_name,
+        is_verified=False,
+        verification_token=verification_token,
+        verification_token_expiry=verification_token_expiry
     )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    access_token = jwt_utils.create_access_token({"sub": new_user.id, "email": new_user.email})
-    return {"access_token": access_token, "token_type": "bearer"}
+    db.add(db_user)
+    try:
+        # Send verification email before committing
+        verification_link = f"http://localhost:8000/auth/verify-email?token={verification_token}"
+        EmailService.send_verification_email(user.email, verification_link)
+        db.commit()
+        db.refresh(db_user)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to send verification email: {str(e)}")
+    
+    return {"message": "Signup successful. Please check your email to verify your account."}
 
 # --- Login Endpoint ---
 @router.post("/login", response_model=TokenResponse)
@@ -62,6 +99,8 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
 # --- Google OAuth Setup ---
 config = Config(environ=os.environ)
 oauth = OAuth(config)
+
+
 oauth.register(
     name='google',
     client_id=os.environ.get('GOOGLE_CLIENT_ID'),
@@ -74,28 +113,369 @@ oauth.register(
 
 @router.get('/google-login')
 async def google_login(request: Request):
-    redirect_uri = request.url_for('google_auth')
-    return await oauth.google.authorize_redirect(request, redirect_uri)
+    try:
+        # Use explicit redirect URI instead of request.url_for()
+        redirect_uri = "http://localhost:8000/auth/google-auth"
+        print(f"Redirect URI: {redirect_uri}")
+        if oauth.google == None: return
+        return await oauth.google.authorize_redirect(request, redirect_uri)
+    except Exception as e:
+        print(f"Google login error: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Google login failed: {str(e)}")
 
 @router.get('/google-auth')
 async def google_auth(request: Request, db: Session = Depends(get_db)):
-    token = await oauth.google.authorize_access_token(request)
-    user_info = await oauth.google.parse_id_token(request, token)
-    if not user_info:
-        raise HTTPException(status_code=400, detail="Failed to retrieve user info from Google")
-    email = user_info['email']
-    user = db.query(User).filter(User.email == email).first()
-    if not user:
-        # Create user if doesn't exist
-        user = User(
-            username=email.split('@')[0],
+    try:
+        print("Starting Google OAuth callback...")
+        print(f"Request URL: {request.url}")
+        print(f"Request query params: {request.query_params}")
+        
+        # Check if we have the authorization code
+        code = request.query_params.get('code')
+        if not code:
+            print("No authorization code found in request")
+            raise HTTPException(status_code=400, detail="No authorization code received from Google")
+        
+        print(f"Authorization code received: {code[:10]}...")
+        
+        if oauth.google == None: return
+        token = await oauth.google.authorize_access_token(request)
+        print(f"Token received: {token}")
+        
+        # Get user info from Google's userinfo endpoint
+        # Pass the token to the request
+        try:
+            resp = await oauth.google.get('https://www.googleapis.com/oauth2/v2/userinfo', token=token)
+            user_info = resp.json()
+            print(f"User info from API: {user_info}")
+        except Exception as api_error:
+            print(f"Failed to get user info from API: {api_error}")
+            # Fallback: use user info from the token if available
+            if 'userinfo' in token:
+                user_info = token['userinfo']
+                print(f"Using user info from token: {user_info}")
+            else:
+                raise HTTPException(status_code=400, detail="Failed to retrieve user info from Google")
+        
+        if not user_info or 'email' not in user_info:
+            raise HTTPException(status_code=400, detail="Failed to retrieve user info from Google")
+        
+        email = user_info['email']
+        user = db.query(User).filter(User.email == email).first()
+        
+        if not user:
+            # Create user if doesn't exist
+            username = email.split('@')[0]
+            # Ensure username is unique
+            counter = 1
+            original_username = username
+            while db.query(User).filter(User.username == username).first():
+                username = f"{original_username}{counter}"
+                counter += 1
+            
+            user = User(
+                username=username,
+                email=email,
+                hashed_password=Hasher.get_password_hash(os.urandom(16).hex()),
+                full_name=user_info.get('name', '')
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+        
+        access_token = jwt_utils.create_access_token({"sub": user.id, "email": user.email})
+        
+        # Redirect to frontend with the token
+        frontend_url = "http://localhost:5173"  # Your frontend URL
+        redirect_url = f"{frontend_url}/auth/callback?token={access_token}"
+        return RedirectResponse(url=redirect_url)
+        
+    except Exception as e:
+        print(f"Google OAuth error: {str(e)}")
+        print(f"Error type: {type(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=400, detail=f"OAuth authentication failed: {str(e)}")
+
+@router.post("/validate-token", response_model=TokenValidationResponse)
+def validate_token(Authorization: str = Header(...), db: Session = Depends(get_db)):
+    """
+    Validate JWT token and check if user still exists in database.
+    Returns detailed validation response with user information.
+    """
+    try:
+        # Extract token from Authorization header
+        if not Authorization.startswith("Bearer "):
+            return TokenValidationResponse(
+                valid=False,
+                message="Invalid authorization header format. Expected 'Bearer <token>'"
+            )
+        
+        token = Authorization.replace("Bearer ", "")
+        
+        # Verify token signature and expiration
+        payload = jwt_utils.verify_access_token(token)
+        if not payload:
+            return TokenValidationResponse(
+                valid=False,
+                message="Invalid or expired token"
+            )
+        
+        # Extract user information from token
+        user_id = payload.get("sub")
+        email = payload.get("email")
+        
+        if not user_id or not email:
+            return TokenValidationResponse(
+                valid=False,
+                message="Token payload missing required user information"
+            )
+        
+        # Check if user still exists in database
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return TokenValidationResponse(
+                valid=False,
+                message="User no longer exists in database"
+            )
+        
+        # Verify email matches (in case user was updated)
+        if user.email != email:
+            return TokenValidationResponse(
+                valid=False,
+                message="User email mismatch"
+            )
+        
+        # Check token expiration
+        exp_timestamp = payload.get("exp")
+        if exp_timestamp:
+            exp_datetime = datetime.fromtimestamp(exp_timestamp)
+            now = datetime.now(timezone.utc)
+            if now > exp_datetime:
+                return TokenValidationResponse(
+                    valid=False,
+                    message="Token has expired"
+                )
+        
+        return TokenValidationResponse(
+            valid=True,
+            payload=payload,
+            user_id=user_id,
             email=email,
-            hashed_password=Hasher.get_password_hash(os.urandom(16).hex()),
-            full_name=user_info.get('name')
+            message="Token is valid"
         )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
+        
+    except Exception as e:
+        return TokenValidationResponse(
+            valid=False,
+            message=f"Token validation error: {str(e)}"
+        )
+
+class RefreshTokenRequest(BaseModel):
+    access_token: str
+
+@router.post("/refresh-token", response_model=TokenResponse)
+def refresh_token(request: RefreshTokenRequest, db: Session = Depends(get_db)):
+    """
+    Refresh an access token by validating the current token and issuing a new one.
+    Includes comprehensive validation checks.
+    """
+    try:
+        # Verify the current token
+        payload = jwt_utils.verify_access_token(request.access_token)
+        if not payload:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired token"
+            )
+        
+        # Extract user information
+        user_id = payload.get("sub")
+        email = payload.get("email")
+        
+        if not user_id or not email:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token payload missing required user information"
+            )
+        
+        # Verify user still exists in database
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User no longer exists"
+            )
+        
+        # Verify email matches
+        if user.email != email:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User email mismatch"
+            )
+        
+        # Check if token is close to expiration (within 5 minutes)
+        exp_timestamp = payload.get("exp")
+        if exp_timestamp:
+            exp_datetime = datetime.fromtimestamp(exp_timestamp)
+            now = datetime.now(timezone.utc)
+            time_until_expiry = exp_datetime - now
+            
+            # If token is not close to expiry, return error
+            if time_until_expiry.total_seconds() > 300:  # 5 minutes
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Token is not close to expiration. Refresh only when needed."
+                )
+        
+        # Create new token payload (remove exp to let create_access_token set new expiration)
+        new_payload = {
+            "sub": user_id,
+            "email": email
+        }
+        
+        # Generate new access token
+        new_token = jwt_utils.create_access_token(new_payload)
+        
+        return TokenResponse(
+            access_token=new_token,
+            token_type="bearer"
+        )
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Token refresh error: {str(e)}"
+        )
+
+# --- Dependency for getting current user ---
+def get_current_user(Authorization: str = Header(...), db: Session = Depends(get_db)) -> User:
+    """
+    Dependency function to get the current authenticated user.
+    Can be used to protect endpoints that require authentication.
+    
+    Usage:
+    @router.get("/protected-endpoint")
+    def protected_endpoint(current_user: User = Depends(get_current_user)):
+        return {"message": f"Hello {current_user.username}"}
+    """
+    try:
+        # Extract token from Authorization header
+        if not Authorization.startswith("Bearer "):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authorization header format. Expected 'Bearer <token>'"
+            )
+        
+        token = Authorization.replace("Bearer ", "")
+        
+        # Verify token signature and expiration
+        payload = jwt_utils.verify_access_token(token)
+        if not payload:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired token"
+            )
+        
+        # Extract user information from token
+        user_id = payload.get("sub")
+        email = payload.get("email")
+        
+        if not user_id or not email:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token payload missing required user information"
+            )
+        
+        # Check if user still exists in database
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User no longer exists in database"
+            )
+        
+        # Verify email matches (in case user was updated)
+        if user.email != email:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User email mismatch"
+            )
+        
+        # Check token expiration
+        exp_timestamp = payload.get("exp")
+        if exp_timestamp:
+            exp_datetime = datetime.fromtimestamp(exp_timestamp)
+            now = datetime.now(timezone.utc)
+            if now > exp_datetime:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Token has expired"
+                )
+        
+        return user
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Authentication error: {str(e)}"
+        )
+
+# --- Example Protected Endpoint ---
+@router.get("/me", response_model=dict)
+def get_current_user_info(current_user: User = Depends(get_current_user)):
+    """
+    Example protected endpoint that returns current user information.
+    Demonstrates how to use the get_current_user dependency.
+    """
+    return {
+        "id": current_user.id,
+        "username": current_user.username,
+        "email": current_user.email,
+        "full_name": current_user.full_name,
+        "is_premium": current_user.is_premium,
+        "created_at": current_user.created_at.isoformat() if current_user.created_at is not None else None
+    }
+
+@router.get("/verify-email")
+def verify_email(token: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.verification_token == token).first()
+    frontend_url = "http://localhost:5173/auth/verify"  # Change to your deployed frontend URL if needed
+    if user is None:
+        return RedirectResponse(url=f"{frontend_url}?status=error&reason=invalid_token")
+    expiry = getattr(user, 'verification_token_expiry', None)
+    if expiry is None or datetime.now(timezone.utc) > expiry:
+        return RedirectResponse(url=f"{frontend_url}?status=error&reason=expired_token")
+    user.is_verified = True  # type: ignore
+    user.verification_token = None  # type: ignore
+    user.verification_token_expiry = None  # type: ignore
+    db.commit()
     access_token = jwt_utils.create_access_token({"sub": user.id, "email": user.email})
-    # Redirect or return token
-    return {"access_token": access_token, "token_type": "bearer"} 
+    return RedirectResponse(url=f"http://localhost:5173/?token={access_token}")
+
+@router.post("/resend-verification")
+def resend_verification(request: ResendVerificationRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User with this email does not exist.")
+    if getattr(user, 'is_verified', False):
+        return {"message": "User is already verified."}
+    # Generate new verification token and expiry
+    verification_token = secrets.token_urlsafe(32)
+    verification_token_expiry = datetime.now(timezone.utc) + timedelta(hours=3)
+    setattr(user, 'verification_token', verification_token)
+    setattr(user, 'verification_token_expiry', verification_token_expiry)
+    try:
+        verification_link = f"http://localhost:8000/auth/verify-email?token={verification_token}"
+        EmailService.send_verification_email(getattr(user, 'email'), verification_link)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to send verification email: {str(e)}")
+    return {"message": "Verification email resent. Please check your inbox."} 

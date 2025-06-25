@@ -13,6 +13,9 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     full_name = Column(String(200))
     is_premium = Column(Boolean, default=False)
+    is_verified = Column(Boolean, default=False)
+    verification_token = Column(String(255), nullable=True)
+    verification_token_expiry = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
