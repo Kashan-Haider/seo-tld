@@ -40,7 +40,9 @@ async def create_audit(
             lighthouse_mobile=result.lighthouse_mobile.dict() if result.lighthouse_mobile else None,
             lighthouse_desktop=result.lighthouse_desktop.dict() if result.lighthouse_desktop else None,
             audit_date_start=result.timestamp,
-            audit_date_end=result.timestamp
+            audit_date_end=result.timestamp,
+            url=result.url,
+            timestamp=result.timestamp
         )
         db.add(audit_report)
         db.commit()
@@ -84,4 +86,38 @@ async def get_project_audits(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve project audits: {str(e)}"
+        )
+
+@router.get("/get-latest-audit/{project_id}", response_model=AuditReportResponse)
+async def get_latest_audit(
+    project_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        audits = audit_service.get_audit_history(project_id, db)
+        if not audits:
+            raise HTTPException(status_code=404, detail="No audits found for this project")
+        return audits[0]  # audits are ordered by created_at desc
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve latest audit: {str(e)}"
+        )
+
+@router.get("/get-all-audits/{project_id}", response_model=list[AuditReportResponse])
+async def get_all_audits(
+    project_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        audits = audit_service.get_audit_history(project_id, db)
+        return audits
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve all audits: {str(e)}"
         )

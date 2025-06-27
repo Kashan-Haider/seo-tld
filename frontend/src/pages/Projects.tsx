@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import ProjectCard from '../components/ProjectCard';
 import { useProjectStore } from '../store/projectStore';
-import type { Project } from '../store/projectStore';
 
 const Projects: React.FC = () => {
   const [loading, setLoading] = useState(true);

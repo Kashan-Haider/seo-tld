@@ -1,5 +1,5 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
 import CreateProject from './pages/projects/CreateProject';
@@ -8,22 +8,14 @@ import VerifyEmail from './pages/auth/VerifyEmail';
 import CheckEmail from './pages/auth/CheckEmail';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
-import Home from './pages/Dashboard';
+import Dashboard from './pages/Dashboard';
 import Sidebar from './components/Sidebar';
 import Projects from './pages/Projects';
+import type { AuthContextType } from './typing';
 
 
 
 // Authentication Context
-interface AuthContextType {
-  isAuthenticated: boolean;
-  user: any | null;
-  loading: boolean;
-  login: (token: string) => void;
-  logout: () => void;
-  refreshToken: () => Promise<boolean>;
-}
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
@@ -73,7 +65,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     if (!token) return false;
 
     try {
-      const response = await fetch('/api/auth/refresh-token', {
+      const response = await fetch('/auth/refresh-token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -202,14 +194,14 @@ const App = () => {
           
           {/* Protected routes */}
           <Route element={<ProtectedLayout />}>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Dashboard />} />
             <Route path="/create-project" element={<CreateProject />} />
             <Route path="/projects" element={<Projects/>} />
             <Route path="/project/:id" element={<div>Project Details Page (Coming Soon)</div>} />
             {/* Add more protected routes here */}
           </Route>
 
-          {/* Redirect root to home if not matched */}
+          {/* Redirect root to Dashboard if not matched */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>

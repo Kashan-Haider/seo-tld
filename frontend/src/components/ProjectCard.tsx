@@ -1,12 +1,8 @@
 import React from 'react';
-import type { Project } from '../store/projectStore';
+import type { ProjectCardProps } from '../typing';
 import { Folder, Globe, ArrowRight } from 'lucide-react';
 import { useProjectStore } from '../store/projectStore';
 import { useNavigate } from 'react-router-dom';
-
-interface ProjectCardProps {
-  project: Project;
-}
 
 const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   const formattedDate = project.created_at ? new Date(project.created_at).toLocaleDateString() : '';

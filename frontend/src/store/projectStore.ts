@@ -1,27 +1,5 @@
 import { create } from 'zustand';
-
-export interface Project {
-  id: string;
-  name: string;
-  description?: string;
-  website_url: string;
-  created_at: string;
-  updated_at?: string | null;
-  owner_id: string;
-  // Relationships (optional, not used in frontend store)
-  // owner?: any;
-  // keywords?: any[];
-  // audits?: any[];
-  // competitor_analyses?: any[];
-}
-
-interface ProjectState {
-  projects: Project[];
-  selectedProject: Project | null;
-  setProjects: (projects: Project[]) => void;
-  setSelectedProject: (project: Project) => void;
-  clearSelectedProject: () => void;
-}
+import type { Project, ProjectState } from '../typing';
 
 export const useProjectStore = create<ProjectState>((set) => ({
   projects: [],

@@ -1,0 +1,1 @@
+@example-audit.json is an example of audit report i am recieving from the database. i want you to update my @Dashboard.tsx page to display this information in a very graphical, interactive and informative manner. use @audit.py 

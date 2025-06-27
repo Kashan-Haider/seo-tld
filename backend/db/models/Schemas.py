@@ -143,6 +143,11 @@ class AuditReportResponse(BaseModel):
     desktop_performance_score: Optional[int] = None
     recommendations: Optional[List[str]] = None
     created_at: datetime
+    url: Optional[str] = None
+    timestamp: Optional[datetime] = None
+    pagespeed_data: Optional[dict] = None
+    lighthouse_mobile: Optional[dict] = None
+    lighthouse_desktop: Optional[dict] = None
     
     class Config:
         from_attributes = True

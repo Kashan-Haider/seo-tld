@@ -38,3 +38,6 @@ class AuditReport(Base):
     
     # Relationships
     project = relationship("Project", back_populates="audits")
+
+    url = Column(String, nullable=True)
+    timestamp = Column(DateTime(timezone=True), nullable=True)

@@ -1,11 +1,5 @@
 import { create } from 'zustand';
-
-interface SidebarState {
-  isOpen: boolean;
-  toggle: () => void;
-  open: () => void;
-  close: () => void;
-}
+import type { SidebarState } from '../typing';
 
 export const useSidebarStore = create<SidebarState>((set) => ({
   isOpen: true,
