@@ -7,6 +7,7 @@ import {
 } from 'recharts';
 import { TrendingUp, Smartphone, Monitor, Zap, Clock, Activity, Bell, User, Search, Mail, Settings } from 'lucide-react';
 import NoAudits from './NoAudits';
+import LoadingScreen from '../components/LoadingScreen';
 
 const StatCard = ({ icon, label, value, color, trend, trendValue }: { icon: React.ReactNode, label: string, value: string | number, color: string, trend?: 'up' | 'down', trendValue?: string }) => (
   <div className={`flex flex-col items-start justify-between bg-gradient-to-br from-dark-blue via-medium-blue to-dark-blue rounded-2xl shadow-xl border border-white/10 p-4 min-w-[180px] w-full`} style={{ boxShadow: `0 4px 24px 0 ${color}40` }}>
@@ -51,6 +52,8 @@ const Dashboard: React.FC = () => {
   const { setProjects, selectedProject, projects, setSelectedProject } = useProjectStore();
   const [isGeneratingAudit, setIsGeneratingAudit] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [auditDropdownOpen, setAuditDropdownOpen] = useState(false);
+  const [selectedAudit, setSelectedAudit] = useState<any>(null);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -100,6 +103,14 @@ const Dashboard: React.FC = () => {
       fetchAudits();
     }
   }, [selectedProject]);
+
+  useEffect(() => {
+    if (allAudits.length > 0) {
+      setSelectedAudit(allAudits[0]);
+    } else {
+      setSelectedAudit(null);
+    }
+  }, [allAudits]);
 
   // Prepare chart data
   const chartData = allAudits.map(audit => ({
@@ -186,6 +197,10 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  if (isGeneratingAudit) {
+    return <LoadingScreen />;
+  }
+
   return (
     <div className="w-full flex flex-col bg-dark-blue min-h-screen">
       {/* Top Bar */}
@@ -198,52 +213,79 @@ const Dashboard: React.FC = () => {
               placeholder="Search projects..."
               style={{ minWidth: 200 }}
               value={search || (selectedProject ? selectedProject.name : '')}
-              onChange={e => {
-                setSearch(e.target.value);
-                setDropdownOpen(true);
-              }}
+              onChange={e => setSearch(e.target.value)}
               onFocus={() => setDropdownOpen(true)}
               onBlur={() => setTimeout(() => setDropdownOpen(false), 150)}
-              autoComplete="off"
             />
-            {/* Dropdown */}
             {dropdownOpen && (
               <div className="absolute left-0 right-0 mt-2 bg-dark-blue border border-white/10 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
                 {projects.length === 0 ? (
                   <div className="px-4 py-3 text-white/60">No projects found</div>
                 ) : (
-                  projects
-                    .filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
-                    .map((project) => (
-                      <button
-                        key={project.id}
-                        className={`w-full text-left px-4 py-3 hover:bg-accent-blue/20 transition flex flex-col ${selectedProject?.id === project.id ? 'bg-accent-blue/10' : ''}`}
-                        onMouseDown={() => {
-                          setSelectedProject(project);
-                          setSearch(project.name);
-                          setDropdownOpen(false);
-                        }}
-                      >
-                        <span className="font-semibold text-white">{project.name}</span>
-                        <span className="text-xs text-white/50">{project.website_url}</span>
-                      </button>
-                    ))
+                  projects.map((project) => (
+                    <button
+                      key={project.id}
+                      className={`w-full text-left px-4 py-3 hover:bg-accent-blue/20 transition flex flex-col ${selectedProject?.id === project.id ? 'bg-accent-blue/10' : ''}`}
+                      onMouseDown={() => {
+                        setSelectedProject(project);
+                        setDropdownOpen(false);
+                      }}
+                    >
+                      <span className="font-semibold text-white">{project.name}</span>
+                      <span className="text-xs text-white/50">{project.website_url}</span>
+                    </button>
+                  ))
                 )}
               </div>
             )}
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <button
-            className="flex items-center gap-2 px-6 py-2 rounded-lg bg-gradient-to-r from-accent-blue via-light-purple to-accent-blue text-white font-bold shadow hover:scale-105 transition-all text-base disabled:opacity-60 disabled:cursor-not-allowed"
-            onClick={handleGenerateAudit}
-            disabled={isGeneratingAudit || !selectedProject}
-          >
-            {isGeneratingAudit && (
-              <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
-            )}
-            {isGeneratingAudit ? 'Generating...' : 'Audit'}
-          </button>
+          {/* Audit selection dropdown */}
+          {allAudits.length > 0 && (
+            <>
+              <div className="relative">
+                <button
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-medium-blue text-white border border-white/10 focus:outline-none focus:border-accent-blue transition text-base"
+                  onClick={() => setAuditDropdownOpen((open) => !open)}
+                >
+                  {selectedAudit ? new Date(selectedAudit.timestamp).toLocaleString() : 'Select Audit'}
+                  <svg className={`ml-2 w-4 h-4 transition-transform ${auditDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                </button>
+                {auditDropdownOpen && (
+                  <div className="absolute right-0 mt-2 bg-dark-blue border border-white/10 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto min-w-[220px]">
+                    {allAudits
+                      .slice()
+                      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                      .map((audit) => (
+                        <button
+                          key={audit.id}
+                          className={`w-full text-left px-4 py-3 hover:bg-accent-blue/20 transition flex flex-col ${selectedAudit?.id === audit.id ? 'bg-accent-blue/10' : ''}`}
+                          onMouseDown={() => {
+                            setSelectedAudit(audit);
+                            setAuditDropdownOpen(false);
+                          }}
+                        >
+                          <span className="font-semibold text-white">{new Date(audit.timestamp).toLocaleString()}</span>
+                          <span className="text-xs text-white/50">{audit.url}</span>
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </div>
+              {/* Restore Audit button */}
+              <button
+                className="flex items-center gap-2 px-6 py-2 rounded-lg bg-gradient-to-r from-accent-blue via-light-purple to-accent-blue text-white font-bold shadow hover:scale-105 transition-all text-base disabled:opacity-60 disabled:cursor-not-allowed"
+                onClick={handleGenerateAudit}
+                disabled={isGeneratingAudit || !selectedProject}
+              >
+                {isGeneratingAudit && (
+                  <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
+                )}
+                {isGeneratingAudit ? 'Generating...' : 'Audit'}
+              </button>
+            </>
+          )}
         </div>
       </header>
       <main className="flex-1 flex flex-col gap-8 items-stretch bg-dark-blue/90 px-2 md:px-8 py-8 w-full">
@@ -270,13 +312,13 @@ const Dashboard: React.FC = () => {
               {/* Left: Audit Report Card */}
               <div className="col-span-2 flex flex-col gap-6">
                 <AuditReportCard
-                  url={latestAudit?.url}
-                  timestamp={latestAudit?.timestamp}
-                  overall_score={latestAudit?.overall_score}
-                  mobile_performance_score={latestAudit?.mobile_performance_score}
-                  desktop_performance_score={latestAudit?.desktop_performance_score}
-                  recommendations={latestAudit?.recommendations || []}
-                  pagespeed_data={latestAudit?.pagespeed_data}
+                  url={selectedAudit?.url}
+                  timestamp={selectedAudit?.timestamp}
+                  overall_score={selectedAudit?.overall_score}
+                  mobile_performance_score={selectedAudit?.mobile_performance_score}
+                  desktop_performance_score={selectedAudit?.desktop_performance_score}
+                  recommendations={selectedAudit?.recommendations || []}
+                  pagespeed_data={selectedAudit?.pagespeed_data}
                 />
               </div>
               {/* Right: Mobile and Desktop Trends stacked vertically */}
@@ -316,14 +358,13 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
             {/* Merged Performance Score History and Audit History section */}
-            <div className="w-full min-h-[600px] bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 rounded-3xl border border-cyan-500/20 shadow-[0_0_50px_rgba(34,211,238,0.15)] p-0 flex flex-col mt-8 backdrop-blur-sm relative overflow-hidden">
+            <div className="w-full bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 rounded-3xl border border-cyan-500/20 shadow-[0_0_50px_rgba(34,211,238,0.15)] p-0 flex flex-col mt-8 backdrop-blur-sm relative overflow-hidden">
               {/* Animated background elements */}
               <div className="absolute inset-0 opacity-10">
                 <div className="absolute top-10 left-10 w-32 h-32 bg-blue-500 rounded-full blur-3xl animate-pulse"></div>
                 <div className="absolute bottom-20 right-20 w-40 h-40 bg-cyan-400 rounded-full blur-3xl animate-pulse delay-1000"></div>
                 <div className="absolute top-1/2 left-1/2 w-24 h-24 bg-purple-500 rounded-full blur-2xl animate-pulse delay-500"></div>
               </div>
-              
               <div className="relative z-10">
                 <div className="text-transparent bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text font-bold text-xl mb-6 flex items-center gap-3 px-8 pt-8">
                   <div className="p-2 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-xl backdrop-blur-sm border border-cyan-400/30">
@@ -331,204 +372,210 @@ const Dashboard: React.FC = () => {
                   </div>
                   Performance Score & Audit History
                 </div>
-                
-                <div className="flex-1 w-full h-full px-4 pb-8">
+                <div className="w-full px-4 pb-8">
                   <div className="bg-gradient-to-br from-slate-800/50 to-blue-900/30 rounded-2xl border border-cyan-500/10 p-4 backdrop-blur-sm">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={chartData} margin={{ top: 30, right: 50, left: 10, bottom: 10 }}>
-                        <defs>
-                          <linearGradient id="colorOverall" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                            <stop offset="50%" stopColor="#1d4ed8" stopOpacity={0.4}/>
-                            <stop offset="100%" stopColor="#1e40af" stopOpacity={0.1}/>
-                          </linearGradient>
-                          <linearGradient id="colorMobile" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.7}/>
-                            <stop offset="50%" stopColor="#0891b2" stopOpacity={0.3}/>
-                            <stop offset="100%" stopColor="#0e7490" stopOpacity={0.1}/>
-                          </linearGradient>
-                          <linearGradient id="colorDesktop" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#a855f7" stopOpacity={0.7}/>
-                            <stop offset="50%" stopColor="#7c3aed" stopOpacity={0.3}/>
-                            <stop offset="100%" stopColor="#6d28d9" stopOpacity={0.1}/>
-                          </linearGradient>
+                    {chartData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={400}>
+                        <AreaChart data={chartData} margin={{ top: 30, right: 50, left: 10, bottom: 10 }}>
+                          <defs>
+                            <linearGradient id="colorOverall" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                              <stop offset="50%" stopColor="#1d4ed8" stopOpacity={0.4}/>
+                              <stop offset="100%" stopColor="#1e40af" stopOpacity={0.1}/>
+                            </linearGradient>
+                            <linearGradient id="colorMobile" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.7}/>
+                              <stop offset="50%" stopColor="#0891b2" stopOpacity={0.3}/>
+                              <stop offset="100%" stopColor="#0e7490" stopOpacity={0.1}/>
+                            </linearGradient>
+                            <linearGradient id="colorDesktop" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#a855f7" stopOpacity={0.7}/>
+                              <stop offset="50%" stopColor="#7c3aed" stopOpacity={0.3}/>
+                              <stop offset="100%" stopColor="#6d28d9" stopOpacity={0.1}/>
+                            </linearGradient>
+                            
+                            {/* Glow effects */}
+                            <filter id="glow">
+                              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                              <feMerge> 
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                              </feMerge>
+                            </filter>
+                          </defs>
                           
-                          {/* Glow effects */}
-                          <filter id="glow">
-                            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                            <feMerge> 
-                              <feMergeNode in="coloredBlur"/>
-                              <feMergeNode in="SourceGraphic"/>
-                            </feMerge>
-                          </filter>
-                        </defs>
-                        
-                        <XAxis 
-                          dataKey="timestamp" 
-                          stroke="#22d3ee" 
-                          fontSize={12} 
-                          angle={-25} 
-                          height={70} 
-                          tick={{ fill: '#cbd5e1', fontWeight: 500 }} 
-                          tickLine={false} 
-                          axisLine={{ stroke: '#22d3ee', strokeWidth: 1, opacity: 0.6 }}
-                          tickFormatter={(value) => value}
-                        />
-                        
-                        <YAxis 
-                          stroke="#22d3ee" 
-                          fontSize={12} 
-                          tick={{ fill: '#cbd5e1', fontWeight: 500 }} 
-                          tickLine={false} 
-                          axisLine={{ stroke: '#22d3ee', strokeWidth: 1, opacity: 0.6 }} 
-                          domain={[0, 100]}
-                          tickFormatter={(value) => `${value}%`}
-                        />
-                        
-                        <Tooltip 
-                          content={<CustomTooltip />} 
-                          cursor={{ 
-                            stroke: '#22d3ee', 
-                            strokeWidth: 1, 
-                            strokeDasharray: '4 4',
-                            fill: 'rgba(34, 211, 238, 0.05)'
-                          }} 
-                        />
-                        
-                        <Legend 
-                          iconType="circle" 
-                          wrapperStyle={{ 
-                            paddingTop: 16, 
-                            color: '#e2e8f0', 
-                            fontWeight: 600,
-                            fontSize: '14px'
-                          }} 
-                        />
-                        
-                        {/* Desktop Area - Bottom layer */}
-                        <Area 
-                          type="monotone" 
-                          dataKey="desktop_performance_score" 
-                          stroke="#a855f7" 
-                          strokeWidth={3} 
-                          fillOpacity={1} 
-                          fill="url(#colorDesktop)" 
-                          name="Desktop Score"
-                          dot={{ 
-                            r: 5, 
-                            fill: '#a855f7', 
-                            stroke: '#ffffff', 
-                            strokeWidth: 2,
-                            filter: 'url(#glow)'
-                          }}
-                          activeDot={{ 
-                            r: 7, 
-                            fill: '#a855f7', 
-                            stroke: '#ffffff', 
-                            strokeWidth: 3,
-                            filter: 'url(#glow)'
-                          }}
-                        />
-                        
-                        {/* Mobile Area - Middle layer */}
-                        <Area 
-                          type="monotone" 
-                          dataKey="mobile_performance_score" 
-                          stroke="#22d3ee" 
-                          strokeWidth={3} 
-                          fillOpacity={1} 
-                          fill="url(#colorMobile)" 
-                          name="Mobile Score"
-                          dot={{ 
-                            r: 5, 
-                            fill: '#22d3ee', 
-                            stroke: '#ffffff', 
-                            strokeWidth: 2,
-                            filter: 'url(#glow)'
-                          }}
-                          activeDot={{ 
-                            r: 7, 
-                            fill: '#22d3ee', 
-                            stroke: '#ffffff', 
-                            strokeWidth: 3,
-                            filter: 'url(#glow)'
-                          }}
-                        />
-                        
-                        {/* Overall Area - Top layer */}
-                        <Area 
-                          type="monotone" 
-                          dataKey="overall" 
-                          stroke="#3b82f6" 
-                          strokeWidth={4} 
-                          fillOpacity={1} 
-                          fill="url(#colorOverall)" 
-                          name="Overall Score"
-                          dot={{ 
-                            r: 6, 
-                            fill: '#3b82f6', 
-                            stroke: '#ffffff', 
-                            strokeWidth: 2,
-                            filter: 'url(#glow)'
-                          }}
-                          activeDot={{ 
-                            r: 8, 
-                            fill: '#3b82f6', 
-                            stroke: '#ffffff', 
-                            strokeWidth: 3,
-                            filter: 'url(#glow)'
-                          }}
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
+                          <XAxis 
+                            dataKey="timestamp" 
+                            stroke="#22d3ee" 
+                            fontSize={12} 
+                            angle={-25} 
+                            height={70} 
+                            tick={{ fill: '#cbd5e1', fontWeight: 500 }} 
+                            tickLine={false} 
+                            axisLine={{ stroke: '#22d3ee', strokeWidth: 1, opacity: 0.6 }}
+                            tickFormatter={(value) => value}
+                          />
+                          
+                          <YAxis 
+                            stroke="#22d3ee" 
+                            fontSize={12} 
+                            tick={{ fill: '#cbd5e1', fontWeight: 500 }} 
+                            tickLine={false} 
+                            axisLine={{ stroke: '#22d3ee', strokeWidth: 1, opacity: 0.6 }} 
+                            domain={[0, 100]}
+                            tickFormatter={(value) => `${value}%`}
+                          />
+                          
+                          <Tooltip 
+                            content={<CustomTooltip />} 
+                            cursor={{ 
+                              stroke: '#22d3ee', 
+                              strokeWidth: 1, 
+                              strokeDasharray: '4 4',
+                              fill: 'rgba(34, 211, 238, 0.05)'
+                            }} 
+                          />
+                          
+                          <Legend 
+                            iconType="circle" 
+                            wrapperStyle={{ 
+                              paddingTop: 16, 
+                              color: '#e2e8f0', 
+                              fontWeight: 600,
+                              fontSize: '14px'
+                            }} 
+                          />
+                          
+                          {/* Desktop Area - Bottom layer */}
+                          <Area 
+                            type="monotone" 
+                            dataKey="desktop_performance_score" 
+                            stroke="#a855f7" 
+                            strokeWidth={3} 
+                            fillOpacity={1} 
+                            fill="url(#colorDesktop)" 
+                            name="Desktop Score"
+                            dot={{ 
+                              r: 5, 
+                              fill: '#a855f7', 
+                              stroke: '#ffffff', 
+                              strokeWidth: 2,
+                              filter: 'url(#glow)'
+                            }}
+                            activeDot={{ 
+                              r: 7, 
+                              fill: '#a855f7', 
+                              stroke: '#ffffff', 
+                              strokeWidth: 3,
+                              filter: 'url(#glow)'
+                            }}
+                          />
+                          
+                          {/* Mobile Area - Middle layer */}
+                          <Area 
+                            type="monotone" 
+                            dataKey="mobile_performance_score" 
+                            stroke="#22d3ee" 
+                            strokeWidth={3} 
+                            fillOpacity={1} 
+                            fill="url(#colorMobile)" 
+                            name="Mobile Score"
+                            dot={{ 
+                              r: 5, 
+                              fill: '#22d3ee', 
+                              stroke: '#ffffff', 
+                              strokeWidth: 2,
+                              filter: 'url(#glow)'
+                            }}
+                            activeDot={{ 
+                              r: 7, 
+                              fill: '#22d3ee', 
+                              stroke: '#ffffff', 
+                              strokeWidth: 3,
+                              filter: 'url(#glow)'
+                            }}
+                          />
+                          
+                          {/* Overall Area - Top layer */}
+                          <Area 
+                            type="monotone" 
+                            dataKey="overall" 
+                            stroke="#3b82f6" 
+                            strokeWidth={4} 
+                            fillOpacity={1} 
+                            fill="url(#colorOverall)" 
+                            name="Overall Score"
+                            dot={{ 
+                              r: 6, 
+                              fill: '#3b82f6', 
+                              stroke: '#ffffff', 
+                              strokeWidth: 2,
+                              filter: 'url(#glow)'
+                            }}
+                            activeDot={{ 
+                              r: 8, 
+                              fill: '#3b82f6', 
+                              stroke: '#ffffff', 
+                              strokeWidth: 3,
+                              filter: 'url(#glow)'
+                            }}
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-full">No data available</div>
+                    )}
                   </div>
                 </div>
-                
                 <div className="overflow-x-auto px-8 pb-8">
                   <div className="bg-gradient-to-r from-slate-800/40 to-blue-900/20 rounded-2xl border border-cyan-500/10 backdrop-blur-sm overflow-hidden">
-                    <table className="min-w-full text-left text-slate-200 text-sm">
-                      <thead>
-                        <tr className="bg-gradient-to-r from-slate-700/50 to-blue-800/30 border-b border-cyan-500/20">
-                          <th className="py-4 px-4 font-semibold text-cyan-300">Date</th>
-                          <th className="py-4 px-4 font-semibold text-cyan-300">URL</th>
-                          <th className="py-4 px-4 font-semibold text-cyan-300">Mobile</th>
-                          <th className="py-4 px-4 font-semibold text-cyan-300">Desktop</th>
-                          <th className="py-4 px-4 font-semibold text-cyan-300">Overall</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {allAudits.map((audit, index) => (
-                          <tr 
-                            key={audit.id} 
-                            className={`border-b border-slate-600/20 hover:bg-gradient-to-r hover:from-cyan-500/5 hover:to-blue-500/5 transition-all duration-300 ${
-                              index % 2 === 0 ? 'bg-slate-800/20' : 'bg-transparent'
-                            }`}
-                          >
-                            <td className="py-3 px-4 whitespace-nowrap text-slate-300">
-                              {chartData[index]?.timestamp}
-                            </td>
-                            <td className="py-3 px-4 max-w-[180px] truncate text-slate-300">
-                              {audit.url}
-                            </td>
-                            <td className="py-3 px-4">
-                              <span className="inline-flex items-center px-2 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 text-xs font-medium">
-                                {audit.mobile_performance_score}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4">
-                              <span className="inline-flex items-center px-2 py-1 rounded-lg bg-purple-500/20 text-purple-300 text-xs font-medium">
-                                {audit.desktop_performance_score}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4">
-                              <span className="inline-flex items-center px-2 py-1 rounded-lg bg-blue-500/20 text-blue-300 text-xs font-medium">
-                                {audit.overall_score}
-                              </span>
-                            </td>
+                    {allAudits.length > 0 ? (
+                      <table className="min-w-full text-left text-slate-200 text-sm">
+                        <thead>
+                          <tr className="bg-gradient-to-r from-slate-700/50 to-blue-800/30 border-b border-cyan-500/20">
+                            <th className="py-4 px-4 font-semibold text-cyan-300">Date</th>
+                            <th className="py-4 px-4 font-semibold text-cyan-300">URL</th>
+                            <th className="py-4 px-4 font-semibold text-cyan-300">Mobile</th>
+                            <th className="py-4 px-4 font-semibold text-cyan-300">Desktop</th>
+                            <th className="py-4 px-4 font-semibold text-cyan-300">Overall</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {allAudits.map((audit, index) => (
+                            <tr 
+                              key={audit.id} 
+                              className={`border-b border-slate-600/20 hover:bg-gradient-to-r hover:from-cyan-500/5 hover:to-blue-500/5 transition-all duration-300 ${
+                                index % 2 === 0 ? 'bg-slate-800/20' : 'bg-transparent'
+                              }`}
+                            >
+                              <td className="py-3 px-4 whitespace-nowrap text-slate-300">
+                                {chartData[index]?.timestamp}
+                              </td>
+                              <td className="py-3 px-4 max-w-[180px] truncate text-slate-300">
+                                {audit.url}
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className="inline-flex items-center px-2 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 text-xs font-medium">
+                                  {audit.mobile_performance_score}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className="inline-flex items-center px-2 py-1 rounded-lg bg-purple-500/20 text-purple-300 text-xs font-medium">
+                                  {audit.desktop_performance_score}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className="inline-flex items-center px-2 py-1 rounded-lg bg-blue-500/20 text-blue-300 text-xs font-medium">
+                                  {audit.overall_score}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <div className="flex items-center justify-center h-full">No data available</div>
+                    )}
                   </div>
                 </div>
               </div>

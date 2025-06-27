@@ -1,6 +1,6 @@
 import React from 'react';
 import { RadialBarChart, RadialBar, PolarAngleAxis, ResponsiveContainer } from 'recharts';
-import type { AuditReportCardProps } from '../../typing';
+import type { AuditReportCardProps, Opportunity } from '../../typing';
 
 const CircularScore: React.FC<{ label: string; score: number; color: string }> = ({ label, score, color }) => (
   <div className="flex flex-col items-center justify-center w-32 h-32">
@@ -34,6 +34,11 @@ const Metric: React.FC<{ label: string; value: number | string; unit?: string }>
     <div className="text-base font-semibold text-white">{value}{unit}</div>
   </div>
 );
+
+// Add a type guard for Opportunity
+function isOpportunityArray(arr: any[]): arr is Opportunity[] {
+  return arr.length > 0 && typeof arr[0] === 'object' && 'title' in arr[0];
+}
 
 const AuditReportCard: React.FC<AuditReportCardProps> = ({
   url,
@@ -127,14 +132,24 @@ const AuditReportCard: React.FC<AuditReportCardProps> = ({
       <div className="bg-white/5 rounded-xl p-6">
         <div className="text-white/90 font-bold text-lg mb-2">Recommendations</div>
         <ul className="list-disc list-inside text-white/90 text-base">
-          {recommendations.map((rec, i) => (
-            <li key={i}>
-              {rec.title}
-              {rec.savings_ms !== undefined && (
-                <span className="text-accent-blue"> ({rec.savings_ms}ms)</span>
-              )}
-            </li>
-          ))}
+          {Array.isArray(recommendations) && recommendations.length > 0 ? (
+            isOpportunityArray(recommendations) ? (
+              recommendations.map((rec, i) => (
+                <li key={i}>
+                  {rec.title}
+                  {rec.savings_ms !== undefined && (
+                    <span className="text-accent-blue"> ({rec.savings_ms}ms)</span>
+                  )}
+                </li>
+              ))
+            ) : (
+              (recommendations as string[]).map((rec, i) => (
+                <li key={i}>{rec}</li>
+              ))
+            )
+          ) : (
+            <li>No recommendations available.</li>
+          )}
         </ul>
       </div>
     </div>

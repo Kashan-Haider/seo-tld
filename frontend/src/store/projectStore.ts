@@ -14,4 +14,21 @@ export const useProjectStore = create<ProjectState>((set) => ({
   },
   setSelectedProject: (project) => set({ selectedProject: project }),
   clearSelectedProject: () => set({ selectedProject: null }),
+}));
+
+// Audit zustand store
+export interface AuditState {
+  allAudits: any[];
+  selectedAudit: any | null;
+  setAllAudits: (audits: any[]) => void;
+  setSelectedAudit: (audit: any) => void;
+  clearSelectedAudit: () => void;
+}
+
+export const useAuditStore = create<AuditState>((set) => ({
+  allAudits: [],
+  selectedAudit: null,
+  setAllAudits: (audits) => set({ allAudits: audits, selectedAudit: audits[0] || null }),
+  setSelectedAudit: (audit) => set({ selectedAudit: audit }),
+  clearSelectedAudit: () => set({ selectedAudit: null }),
 })); 
