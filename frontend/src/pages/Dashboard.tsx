@@ -115,9 +115,9 @@ const Dashboard: React.FC = () => {
   // Prepare chart data
   const chartData = allAudits.map(audit => ({
     timestamp: new Date(audit.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-    overall: audit.overall_score,
-    mobile: audit.mobile_performance_score,
-    desktop: audit.desktop_performance_score,
+    overall_score: audit.overall_score,
+    mobile_performance_score: audit.mobile_performance_score,
+    desktop_performance_score: audit.desktop_performance_score,
     fcp_mobile: audit.pagespeed_data?.mobile?.fcp,
     lcp_mobile: audit.pagespeed_data?.mobile?.lcp,
     cls_mobile: audit.pagespeed_data?.mobile?.cls,
@@ -499,7 +499,7 @@ const Dashboard: React.FC = () => {
                           {/* Overall Area - Top layer */}
                           <Area 
                             type="monotone" 
-                            dataKey="overall" 
+                            dataKey="overall_score" 
                             stroke="#3b82f6" 
                             strokeWidth={4} 
                             fillOpacity={1} 
