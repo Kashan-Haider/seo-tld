@@ -27,6 +27,8 @@ export interface SidebarState {
 export interface NoAuditsProps {
   projectName: string;
   onGenerateAudit?: () => void;
+  isLoading?: boolean;
+  error?: string | null;
 }
 
 export interface AuthContextType {

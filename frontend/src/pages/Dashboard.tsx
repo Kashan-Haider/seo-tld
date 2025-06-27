@@ -49,6 +49,8 @@ const Dashboard: React.FC = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { user } = useAuth();
   const { setProjects, selectedProject, projects, setSelectedProject } = useProjectStore();
+  const [isGeneratingAudit, setIsGeneratingAudit] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -139,6 +141,51 @@ const Dashboard: React.FC = () => {
     },
   ] : [];
 
+  const handleGenerateAudit = async () => {
+    try {
+      setIsGeneratingAudit(true);
+      setError(null);
+      const token = localStorage.getItem('access_token');
+      if (!selectedProject) throw new Error('No project selected');
+      console.log("audit requested")
+      const res = await fetch('/api/audit', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          project_id: selectedProject.id,
+          audit_type: 'full',
+          url: selectedProject.website_url,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to generate audit');
+      // Wait a moment for backend to process and DB to update
+      await new Promise(r => setTimeout(r, 1200));
+      // Refetch audits
+      const auditsRes = await fetch(`/api/audit/get-all-audits/${selectedProject.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (auditsRes.ok) {
+      console.log("audit completed")
+        const data = await auditsRes.json();
+        setAllAudits(data);
+        setLatestAudit(data[0] || null);
+      } else {
+        setError('Failed to fetch audits after generation');
+      }
+    } catch (e) {
+      console.error('Error generating audit:', e);
+      setError('An error occurred while generating the audit.');
+    } finally {
+      setIsGeneratingAudit(false);
+    }
+  };
+
   return (
     <div className="w-full flex flex-col bg-dark-blue min-h-screen">
       {/* Top Bar */}
@@ -187,16 +234,29 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <button className="relative"><Bell size={20} className="text-light-gray" /></button>
-          <button className="relative"><Mail size={20} className="text-light-gray" /></button>
-          <button className="relative"><Settings size={20} className="text-light-gray" /></button>
-          <ProfileAvatar />
+          <button
+            className="flex items-center gap-2 px-6 py-2 rounded-lg bg-gradient-to-r from-accent-blue via-light-purple to-accent-blue text-white font-bold shadow hover:scale-105 transition-all text-base disabled:opacity-60 disabled:cursor-not-allowed"
+            onClick={handleGenerateAudit}
+            disabled={isGeneratingAudit || !selectedProject}
+          >
+            {isGeneratingAudit && (
+              <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
+            )}
+            {isGeneratingAudit ? 'Generating...' : 'Audit'}
+          </button>
         </div>
       </header>
       <main className="flex-1 flex flex-col gap-8 items-stretch bg-dark-blue/90 px-2 md:px-8 py-8 w-full">
         {/* If no audits for selected project, show NoAudits */}
         {selectedProject && allAudits.length === 0 ? (
-          <NoAudits projectName={selectedProject?.name || ''} />
+          <div className="flex flex-col items-center justify-center w-full">
+            <NoAudits
+              projectName={selectedProject.name || ''}
+              onGenerateAudit={isGeneratingAudit ? undefined : handleGenerateAudit}
+              isLoading={isGeneratingAudit}
+              error={error}
+            />
+          </div>
         ) : (
           <>
             {/* Stat Cards Row */}

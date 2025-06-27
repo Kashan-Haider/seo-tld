@@ -14,6 +14,7 @@ class AuditService:
         self.pagespeed = PageSpeedService()
     
     async def generate_audit(self, request: AuditRequest, db: Session) -> AuditResult:
+        print('Generating audit...')
         try:
             project = db.query(Project).filter(Project.id == request.project_id).first()
             if not project:
