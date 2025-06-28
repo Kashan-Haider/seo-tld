@@ -11,7 +11,7 @@ import ResetPassword from './pages/auth/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
-import Projects from './pages/Projects';
+import Projects from './pages/projects/Projects';
 import type { AuthContextType } from './typing';
 
 
@@ -186,7 +186,7 @@ const ProtectedLayout: React.FC = () => {
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar />
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto custom-scrollbar">
           <Outlet />
         </main>
       </div>

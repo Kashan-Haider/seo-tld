@@ -9,3 +9,35 @@
   --color-white: #ffffff;            /* Text, icons */
   --color-light-gray: #a3aed6;       /* Secondary text */
 }
+
+/* Custom scrollbar styles */
+.custom-scrollbar {
+  /* Webkit browsers (Chrome, Safari, Edge) */
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--color-dark-blue);
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--color-medium-blue);
+    border-radius: 3px;
+    border: 1px solid var(--color-accent-blue);
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--color-accent-blue);
+  }
+
+  &::-webkit-scrollbar-corner {
+    background: var(--color-dark-blue);
+  }
+
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-medium-blue) var(--color-dark-blue);
+}

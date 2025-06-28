@@ -3,7 +3,7 @@ import React from 'react';
 const AuditHistoryTable: React.FC<{ allAudits: any[] }> = ({ allAudits }) => (
   <div className="bg-gradient-to-br from-dark-blue via-medium-blue to-dark-blue rounded-2xl border border-white/10 shadow-2xl p-6 flex flex-col">
     <div className="text-accent-blue font-bold text-lg mb-4">Audit History</div>
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto custom-scrollbar">
       <table className="min-w-full text-left text-white/90 text-sm">
         <thead>
           <tr className="border-b border-white/10">

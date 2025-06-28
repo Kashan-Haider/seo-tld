@@ -50,7 +50,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               onBlur={() => setTimeout(() => setDropdownOpen(false), 150)}
             />
             {dropdownOpen && (
-              <div className="absolute left-0 right-0 mt-2 bg-gradient-to-br from-dark-blue to-medium-blue border border-white/10 rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto backdrop-blur-md">
+              <div className="absolute left-0 right-0 mt-2 bg-gradient-to-br from-dark-blue to-medium-blue border border-white/10 rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto backdrop-blur-md custom-scrollbar">
                 {projects.length === 0 ? (
                   <div className="px-4 py-3 text-white/60">No projects found</div>
                 ) : (
@@ -103,7 +103,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                 </span>
               </button>
               {auditDropdownOpen && (
-                <div className="absolute right-0 mt-2 bg-gradient-to-br from-dark-blue to-medium-blue border border-white/10 rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto min-w-[280px] backdrop-blur-md">
+                <div className="absolute right-0 mt-2 bg-gradient-to-br from-dark-blue to-medium-blue border border-white/10 rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto min-w-[280px] backdrop-blur-md custom-scrollbar">
                   {allAudits
                     .slice()
                     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())

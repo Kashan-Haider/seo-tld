@@ -154,7 +154,7 @@ const PerformanceHistory: React.FC<PerformanceHistoryProps> = ({ chartData, allA
             )}
           </div>
         </div>
-        <div className="overflow-x-auto px-1 md:px-8 pb-8">
+        <div className="overflow-x-auto px-1 md:px-8 pb-8 custom-scrollbar">
           <div className="bg-gradient-to-r from-dark-blue/60 to-medium-blue/30 rounded-2xl border border-white/10 backdrop-blur-sm overflow-hidden">
             {allAudits.length > 0 ? (
               <table className="min-w-full text-left text-white text-xs md:text-sm">

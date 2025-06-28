@@ -24,6 +24,19 @@ const Dashboard: React.FC = () => {
   const [selectedAudit, setSelectedAudit] = useState<any>(null);
   const navigate = useNavigate();
 
+  // Get second latest audit for trend calculations
+  const secondLatestAudit = allAudits.length > 1 ? allAudits[1] : null;
+
+  // Get the audit before the selected audit for trend calculations
+  const getAuditBeforeSelected = () => {
+    if (!selectedAudit || allAudits.length <= 1) return null;
+    const selectedIndex = allAudits.findIndex(audit => audit.id === selectedAudit.id);
+    if (selectedIndex === -1 || selectedIndex === 0) return null;
+    return allAudits[selectedIndex + 1]; // +1 because audits are sorted newest first
+  };
+
+  const auditBeforeSelected = getAuditBeforeSelected();
+
   // Memoize chart data to prevent recalculation on every render
   const chartData = useMemo(() => {
     return allAudits.map(audit => ({
@@ -79,6 +92,7 @@ const Dashboard: React.FC = () => {
         const data = await auditsRes.json();
         setAllAudits(data);
         setLatestAudit(data[0] || null);
+        setSelectedAudit(data[0] || null);
       } else {
         setError('Failed to fetch audits after generation');
       }
@@ -148,13 +162,16 @@ const Dashboard: React.FC = () => {
             const data = await res.json();
             setAllAudits(data);
             setLatestAudit(data[0] || null);
+            setSelectedAudit(data[0] || null);
           } else {
             setAllAudits([]);
             setLatestAudit(null);
+            setSelectedAudit(null);
           }
         } catch {
           setAllAudits([]);
           setLatestAudit(null);
+          setSelectedAudit(null);
         }
       };
       fetchAudits();
@@ -214,7 +231,7 @@ const Dashboard: React.FC = () => {
         ) : (
           <>
             {/* Stat Cards Row */}
-            <StatCards latestAudit={latestAudit} />
+            <StatCards latestAudit={selectedAudit} secondLatestAudit={auditBeforeSelected} />
             
             {/* Main Content Grid: Audit Report Card left, Trends right */}
             <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8 items-center lg:items-start">

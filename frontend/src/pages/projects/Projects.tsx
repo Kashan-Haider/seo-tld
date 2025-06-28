@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../App';
-import ProjectCard from '../components/ProjectCard';
-import { useProjectStore } from '../store/projectStore';
+import { useAuth } from '../../App';
+import ProjectCard from '../../components/ProjectCard';
+import { useProjectStore } from '../../store/projectStore';
 
 const Projects: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -75,7 +75,7 @@ const Projects: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="flex flex-wrap gap-8">
               {projects.map((project) => (
                 <ProjectCard
                   key={project.id}

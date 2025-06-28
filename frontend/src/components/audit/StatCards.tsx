@@ -22,51 +22,67 @@ const StatCard: React.FC<StatCardProps> = ({ icon, label, value, color, trend, t
 
 interface StatCardsProps {
   latestAudit: any;
+  secondLatestAudit?: any;
 }
 
-const StatCards: React.FC<StatCardsProps> = ({ latestAudit }) => {
+// Helper function to calculate trend
+const calculateTrend = (current: number, previous: number): { trend: 'up' | 'down', trendValue: string } | null => {
+  if (previous === null || previous === undefined || current === null || current === undefined) {
+    return null;
+  }
+  
+  const difference = current - previous;
+  const percentageChange = ((difference / previous) * 100);
+  
+  return {
+    trend: difference >= 0 ? 'up' : 'down',
+    trendValue: `${difference >= 0 ? '+' : ''}${percentageChange.toFixed(1)}%`
+  };
+};
+
+const StatCards: React.FC<StatCardsProps> = ({ latestAudit, secondLatestAudit }) => {
   const stats = latestAudit ? [
     {
       icon: <TrendingUp size={22} className="text-accent-blue" />, 
       label: 'Overall Score', 
       value: latestAudit.overall_score, 
       color: '#3b82f6', 
-      trend: "up" as const, 
-      trendValue: '+2.1%'
+      ...calculateTrend(latestAudit.overall_score, secondLatestAudit?.overall_score)
     },
     {
       icon: <Smartphone size={22} className="text-neon-cyan" />, 
       label: 'Mobile Score', 
       value: latestAudit.mobile_performance_score, 
       color: '#22d3ee', 
-      trend: "up" as const, 
-      trendValue: '+1.2%'
+      ...calculateTrend(latestAudit.mobile_performance_score, secondLatestAudit?.mobile_performance_score)
     },
     {
       icon: <Monitor size={22} className="text-light-purple" />, 
       label: 'Desktop Score', 
       value: latestAudit.desktop_performance_score, 
       color: '#7c3aed', 
-      trend: "down" as const, 
-      trendValue: '-0.8%'
+      ...calculateTrend(latestAudit.desktop_performance_score, secondLatestAudit?.desktop_performance_score)
     },
     {
       icon: <Zap size={22} className="text-accent-blue" />, 
       label: 'FCP (Mobile)', 
       value: latestAudit.pagespeed_data?.mobile?.fcp + 's', 
-      color: '#3b82f6'
+      color: '#3b82f6',
+      ...calculateTrend(latestAudit.pagespeed_data?.mobile?.fcp, secondLatestAudit?.pagespeed_data?.mobile?.fcp)
     },
     {
       icon: <Clock size={22} className="text-light-purple" />, 
       label: 'LCP (Mobile)', 
       value: latestAudit.pagespeed_data?.mobile?.lcp + 's', 
-      color: '#7c3aed'
+      color: '#7c3aed',
+      ...calculateTrend(latestAudit.pagespeed_data?.mobile?.lcp, secondLatestAudit?.pagespeed_data?.mobile?.lcp)
     },
     {
       icon: <Activity size={22} className="text-accent-blue" />, 
       label: 'CLS (Mobile)', 
       value: latestAudit.pagespeed_data?.mobile?.cls, 
-      color: '#3b82f6'
+      color: '#3b82f6',
+      ...calculateTrend(latestAudit.pagespeed_data?.mobile?.cls, secondLatestAudit?.pagespeed_data?.mobile?.cls)
     },
   ] : [];
 

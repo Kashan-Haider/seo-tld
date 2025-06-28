@@ -51,7 +51,7 @@ const Sidebar: React.FC = () => {
           />
           {/* Sidebar panel with slide-in/out animation */}
           <aside
-            className="fixed left-0 top-0 h-screen z-50 w-64 bg-dark-blue/95 border-r border-white/10 p-6 gap-4 flex flex-col transform transition-transform duration-300 ease-in-out overflow-y-auto"
+            className="fixed left-0 top-0 h-screen z-50 w-64 bg-dark-blue/95 border-r border-white/10 p-6 gap-4 flex flex-col transform transition-transform duration-300 ease-in-out overflow-y-auto custom-scrollbar"
             style={{ boxShadow: '2px 0 24px 0 rgba(0,0,0,0.2)' }}
           >
             <div className="mb-8 flex items-center gap-2 justify-between">
@@ -83,7 +83,7 @@ const Sidebar: React.FC = () => {
         </div>
       )}
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 h-screen bg-dark-blue/80 border-r border-white/10 p-6 gap-4 overflow-y-auto">
+      <aside className="hidden md:flex flex-col w-64 h-screen bg-dark-blue/80 border-r border-white/10 p-6 gap-4 overflow-y-auto custom-scrollbar">
         <div className="mb-8 flex items-center gap-2">
           <span className="text-2xl font-bold text-white tracking-widest">SEO AGENT</span>
         </div>
