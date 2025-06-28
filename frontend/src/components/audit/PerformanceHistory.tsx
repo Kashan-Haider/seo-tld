@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { TrendingUp, Trash2 } from 'lucide-react';
+import { TrendingUp, Trash2, Download } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import ConfirmationDialog from '../ConfirmationDialog';
 
@@ -71,11 +71,67 @@ const PerformanceHistory: React.FC<PerformanceHistoryProps> = ({ chartData, allA
   const [deletingAuditId, setDeletingAuditId] = useState<number | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [auditToDelete, setAuditToDelete] = useState<any>(null);
+  const [downloadingAuditId, setDownloadingAuditId] = useState<number | null>(null);
 
   const handleDeleteClick = (e: React.MouseEvent, audit: any) => {
     e.stopPropagation();
     setAuditToDelete(audit);
     setShowDeleteDialog(true);
+  };
+
+  const handleDownloadClick = async (e: React.MouseEvent, audit: any) => {
+    e.stopPropagation();
+    setDownloadingAuditId(audit.id);
+    
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`/api/audit/by-id/${audit.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch audit data');
+      }
+
+      const auditData = await response.json();
+      
+      // Create a formatted JSON file for download
+      const downloadData = {
+        audit_id: audit.id,
+        url: audit.url,
+        timestamp: audit.timestamp,
+        overall_score: audit.overall_score,
+        mobile_performance_score: audit.mobile_performance_score,
+        desktop_performance_score: audit.desktop_performance_score,
+        pagespeed_data: audit.pagespeed_data,
+        recommendations: audit.recommendations,
+        lighthouse_mobile: audit.lighthouse_mobile,
+        lighthouse_desktop: audit.lighthouse_desktop,
+        created_at: audit.created_at,
+        updated_at: audit.updated_at
+      };
+
+      // Create and download the file
+      const blob = new Blob([JSON.stringify(downloadData, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `audit-${audit.id}-${new Date(audit.timestamp).toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Audit downloaded successfully');
+    } catch (error) {
+      console.error('Failed to download audit:', error);
+      toast.error('Failed to download audit. Please try again.');
+    } finally {
+      setDownloadingAuditId(null);
+    }
   };
 
   const handleConfirmDelete = async () => {
@@ -244,14 +300,24 @@ const PerformanceHistory: React.FC<PerformanceHistoryProps> = ({ chartData, allA
                           </span>
                         </td>
                         <td className="py-2 md:py-3 px-2 md:px-4">
-                          <button
-                            onClick={(e) => handleDeleteClick(e, audit)}
-                            disabled={deletingAuditId === audit.id}
-                            className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Delete audit"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => handleDownloadClick(e, audit)}
+                              disabled={downloadingAuditId === audit.id}
+                              className="p-1.5 text-accent-blue hover:text-blue-300 hover:bg-accent-blue/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Download audit"
+                            >
+                              <Download size={16} />
+                            </button>
+                            <button
+                              onClick={(e) => handleDeleteClick(e, audit)}
+                              disabled={deletingAuditId === audit.id}
+                              className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Delete audit"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}

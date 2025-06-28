@@ -35,7 +35,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   handleGenerateAudit,
 }) => {
   return (
-    <header className="w-full bg-gradient-to-br from-dark-blue/95 via-dark-blue/90 to-dark-blue/95 border-b border-white/10 sticky top-0 z-30 backdrop-blur-sm">
+    <header className="w-full bg-gradient-to-br from-dark-blue/95 via-dark-blue/90 to-dark-blue/95  sticky top-0 z-30 backdrop-blur-sm">
       <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 px-4 lg:px-6 py-4">
         {/* Search and Project Selection */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 lg:gap-4 w-full lg:w-1/2">
