@@ -69,7 +69,7 @@ const Sidebar: React.FC = () => {
         </aside>
       </div>
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 min-h-screen bg-dark-blue/80 border-r border-white/10 p-6 gap-4">
+      <aside className="hidden md:flex flex-col w-64 h-screen bg-dark-blue/80 border-r border-white/10 p-6 gap-4">
         <div className="mb-8 flex items-center gap-2">
           <span className="text-2xl font-bold text-white tracking-widest">SEO AGENT</span>
         </div>

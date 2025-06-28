@@ -22,6 +22,9 @@ export interface SidebarState {
   isOpen: boolean;
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
+  toggle: () => void;
+  open: () => void;
+  close: () => void;
 }
 
 export interface NoAuditsProps {
@@ -32,11 +35,12 @@ export interface NoAuditsProps {
 }
 
 export interface AuthContextType {
+  isAuthenticated: boolean;
   user: any;
-  setUser: (user: any) => void;
   loading: boolean;
-  setLoading: (loading: boolean) => void;
+  login: (token: string) => void;
   logout: () => void;
+  refreshToken: () => Promise<boolean>;
 }
 
 export interface ProjectCardProps {
