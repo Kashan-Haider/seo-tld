@@ -14,6 +14,7 @@ export interface ProjectState {
   projects: Project[];
   selectedProject: Project | null;
   setProjects: (projects: Project[]) => void;
+  setProjectsWithAutoSelect: (projects: Project[]) => void;
   setSelectedProject: (project: Project) => void;
   clearSelectedProject: () => void;
 }
