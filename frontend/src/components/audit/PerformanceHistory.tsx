@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { TrendingUp, Trash2, Download } from 'lucide-react';
+import { TrendingUp, Trash2, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import ConfirmationDialog from '../ConfirmationDialog';
 
@@ -72,6 +72,17 @@ const PerformanceHistory: React.FC<PerformanceHistoryProps> = ({ chartData, allA
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [auditToDelete, setAuditToDelete] = useState<any>(null);
   const [downloadingAuditId, setDownloadingAuditId] = useState<number | null>(null);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const auditsPerPage = 8;
+
+  // Calculate pagination
+  const totalPages = Math.ceil(allAudits.length / auditsPerPage);
+  const startIndex = (currentPage - 1) * auditsPerPage;
+  const endIndex = startIndex + auditsPerPage;
+  const currentAudits = allAudits.slice(startIndex, endIndex);
+  const currentChartData = chartData.slice(startIndex, endIndex);
 
   const handleDeleteClick = (e: React.MouseEvent, audit: any) => {
     e.stopPropagation();
@@ -167,6 +178,20 @@ const PerformanceHistory: React.FC<PerformanceHistoryProps> = ({ chartData, allA
     }
   };
 
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    // Scroll to top of the table
+    const tableElement = document.querySelector('.audit-table-container');
+    if (tableElement) {
+      tableElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  // Reset to first page when audits change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [allAudits.length]);
+
   return (
     <>
       <div className="w-full bg-gradient-to-br from-dark-blue via-medium-blue to-dark-blue rounded-2xl shadow-xl border border-white/10 p-0 flex flex-col mt-8 relative overflow-hidden">
@@ -256,9 +281,24 @@ const PerformanceHistory: React.FC<PerformanceHistoryProps> = ({ chartData, allA
               )}
             </div>
           </div>
-          <div className="overflow-x-auto px-1 md:px-8 pb-8 custom-scrollbar">
+          
+          {/* Pagination Info */}
+          {allAudits.length > 0 && (
+            <div className="px-8 pb-4">
+              <div className="flex items-center justify-between text-sm text-light-gray">
+                <div>
+                  Showing {startIndex + 1} to {Math.min(endIndex, allAudits.length)} of {allAudits.length} audits
+                </div>
+                <div className="text-accent-blue font-medium">
+                  Page {currentPage} of {totalPages}
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div className="overflow-x-auto px-1 md:px-8 pb-4 custom-scrollbar audit-table-container">
             <div className="bg-gradient-to-r from-dark-blue/60 to-medium-blue/30 rounded-2xl border border-white/10 backdrop-blur-sm overflow-hidden">
-              {allAudits.length > 0 ? (
+              {currentAudits.length > 0 ? (
                 <table className="min-w-full text-left text-white text-xs md:text-sm">
                   <thead>
                     <tr className="bg-gradient-to-r from-dark-blue/60 to-medium-blue/30 border-b border-white/10">
@@ -271,7 +311,7 @@ const PerformanceHistory: React.FC<PerformanceHistoryProps> = ({ chartData, allA
                     </tr>
                   </thead>
                   <tbody>
-                    {allAudits.map((audit, index) => (
+                    {currentAudits.map((audit, index) => (
                       <tr 
                         key={audit.id} 
                         className={`border-b border-white/10 hover:bg-accent-blue/5 transition-all duration-300 ${
@@ -279,7 +319,7 @@ const PerformanceHistory: React.FC<PerformanceHistoryProps> = ({ chartData, allA
                         }`}
                       >
                         <td className="py-2 md:py-3 px-2 md:px-4 whitespace-nowrap text-white/90">
-                          {chartData[index]?.timestamp}
+                          {currentChartData[index]?.timestamp}
                         </td>
                         <td className="py-2 md:py-3 px-2 md:px-4 max-w-[120px] md:max-w-[180px] truncate text-white/90">
                           {audit.url}
@@ -328,6 +368,47 @@ const PerformanceHistory: React.FC<PerformanceHistoryProps> = ({ chartData, allA
               )}
             </div>
           </div>
+          
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="px-8 pb-8">
+              <div className="flex items-center justify-center gap-4">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-accent-blue to-light-purple text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg"
+                >
+                  <ChevronLeft size={18} />
+                  Previous
+                </button>
+                
+                <div className="flex items-center gap-2">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => handlePageChange(page)}
+                      className={`w-8 h-8 rounded-lg font-medium transition-all duration-300 ${
+                        currentPage === page
+                          ? 'bg-gradient-to-r from-accent-blue to-light-purple text-white shadow-lg'
+                          : 'bg-white/10 text-light-gray hover:bg-white/20 hover:text-white'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+                
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-accent-blue to-light-purple text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg"
+                >
+                  Next
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
