@@ -10,6 +10,7 @@ import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import Sidebar from './components/Sidebar';
+import Navbar from './components/Navbar';
 import Projects from './pages/Projects';
 import type { AuthContextType } from './typing';
 
@@ -183,9 +184,12 @@ const ProtectedLayout: React.FC = () => {
   return isAuthenticated ? (
     <div className="h-screen w-full flex flex-col md:flex-row bg-dark-blue overflow-hidden">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto">
-        <Outlet />
-      </main>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Navbar />
+        <main className="flex-1 overflow-y-auto">
+          <Outlet />
+        </main>
+      </div>
     </div>
   ) : <Navigate to="/login" replace />;
 };

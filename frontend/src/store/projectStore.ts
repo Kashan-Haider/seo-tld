@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Project, ProjectState } from '../typing';
+import type { ProjectState } from '../typing';
 
 export const useProjectStore = create<ProjectState>((set) => ({
   projects: [],

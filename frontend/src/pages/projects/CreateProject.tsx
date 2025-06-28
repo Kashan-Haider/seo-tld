@@ -56,7 +56,7 @@ const CreateProject: React.FC = () => {
 
   return (
     <div className="w-full flex flex-col bg-dark-blue">
-      <main className="flex-1 p-5 md:p-10 flex flex-col items-center justify-center px-2 md:px-8 py-8 bg-dark-blue/90">
+      <main className="flex-1 p-4 lg:p-8 flex flex-col items-center justify-center bg-dark-blue/90">
         <section className="w-full max-w-2xl mx-auto">
           <div className="rounded-3xl p-6 md:p-10 shadow-2xl border border-white/10 backdrop-blur-xl flex flex-col gap-6 min-w-0"
             style={{

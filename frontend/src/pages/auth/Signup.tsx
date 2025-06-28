@@ -13,7 +13,7 @@ const Signup: React.FC = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, message: '' });
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { user } = useAuth();
 
   const checkPasswordStrength = (password: string) => {
     let score = 0;

@@ -32,9 +32,9 @@ interface MetricsTrendsProps {
 
 const MetricsTrends: React.FC<MetricsTrendsProps> = ({ chartData }) => {
   return (
-    <div className="col-span-1 flex flex-col gap-8">
+    <div className="col-span-1 flex flex-col gap-8 items-center juce">
       {/* Mobile Metrics Trends */}
-      <div className="bg-gradient-to-br from-dark-blue via-medium-blue to-dark-blue rounded-2xl border border-white/10 shadow-2xl p-6 flex flex-col">
+      <div className="bg-gradient-to-br from-dark-blue via-medium-blue to-dark-blue rounded-2xl border border-white/10 shadow-2xl p-6 flex flex-col w-full">
         <div className="text-accent-blue font-bold text-lg mb-4 flex items-center gap-2">
           <Smartphone className="text-accent-blue" /> Mobile Metrics Trends
         </div>
@@ -52,7 +52,7 @@ const MetricsTrends: React.FC<MetricsTrendsProps> = ({ chartData }) => {
         </ResponsiveContainer>
       </div>
       {/* Desktop Metrics Trends */}
-      <div className="bg-gradient-to-br from-dark-blue via-medium-blue to-dark-blue rounded-2xl border border-white/10 shadow-2xl p-6 flex flex-col">
+      <div className="bg-gradient-to-br from-dark-blue via-medium-blue to-dark-blue rounded-2xl border border-white/10 shadow-2xl p-6 flex flex-col w-full">
         <div className="text-light-purple font-bold text-lg mb-4 flex items-center gap-2">
           <Monitor className="text-light-purple" /> Desktop Metrics Trends
         </div>

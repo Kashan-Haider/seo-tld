@@ -37,8 +37,9 @@ const Projects: React.FC = () => {
 
   return (
     <div className="w-full flex flex-col bg-dark-blue">
-      <main className="flex-1 flex flex-col bg-dark-blue/90">
-        <header className="flex flex-col md:flex-row md:items-center md:justify-between px-4 md:px-8 py-6 border-b border-white/10 bg-dark-blue/80 sticky top-0 z-20 gap-4 md:gap-0">
+      <main className="flex-1 flex flex-col bg-dark-blue/90 px-4 lg:px-8 py-8">
+        {/* Page Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
           <div>
             <div className="text-2xl md:text-3xl font-bold text-white mb-1">Your Projects</div>
             <div className="text-light-gray text-sm md:text-base">Manage all your SEO projects in one place</div>
@@ -49,8 +50,10 @@ const Projects: React.FC = () => {
           >
             + New Project
           </button>
-        </header>
-        <section className="flex-1 w-full max-w-5xl mx-auto px-2 md:px-8 py-12 md:py-16">
+        </div>
+
+        {/* Content Section */}
+        <section className="flex-1 w-full max-w-5xl mx-auto">
           <div className="mb-8 text-center">
             <div className="text-white text-xl md:text-2xl font-semibold mb-2">All Projects</div>
             <div className="text-light-gray text-base md:text-lg">Browse, manage, and jump into your projects below.</div>

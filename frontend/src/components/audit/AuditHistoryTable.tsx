@@ -15,7 +15,7 @@ const AuditHistoryTable: React.FC<{ allAudits: any[] }> = ({ allAudits }) => (
           </tr>
         </thead>
         <tbody>
-          {allAudits.map((audit, idx) => (
+          {allAudits.map((audit) => (
             <tr key={audit.id} className="border-b border-white/10 hover:bg-accent-blue/10 transition">
               <td className="py-2 px-2 whitespace-nowrap">{new Date(audit.timestamp).toLocaleString()}</td>
               <td className="py-2 px-2 max-w-[180px] truncate">{audit.url}</td>

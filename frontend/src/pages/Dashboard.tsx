@@ -200,7 +200,7 @@ const Dashboard: React.FC = () => {
         isGeneratingAudit={isGeneratingAudit}
         handleGenerateAudit={handleGenerateAudit}
       />
-      <main className="block bg-dark-blue/90 px-2 md:px-8 py-8 w-full">
+      <main className="block bg-dark-blue/90 px-4 lg:px-8 py-8 w-full">
         {/* If no audits for selected project, show NoAudits */}
         {selectedProject && allAudits.length === 0 ? (
           <div className="flex flex-col items-center justify-center w-full">
@@ -217,7 +217,7 @@ const Dashboard: React.FC = () => {
             <StatCards latestAudit={latestAudit} />
             
             {/* Main Content Grid: Audit Report Card left, Trends right */}
-            <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8 items-center lg:items-start">
               {/* Left: Audit Report Card */}
               <div className="col-span-2 flex flex-col gap-6">
                 <AuditReportCard
