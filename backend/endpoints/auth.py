@@ -189,37 +189,48 @@ class RefreshTokenRequest(BaseModel):
 @router.post("/refresh-token", response_model=TokenResponse)
 def refresh_token(request: RefreshTokenRequest, db: Session = Depends(get_db)):
     try:
-        payload = jwt_utils.verify_access_token(request.access_token)
+        print("Received access_token:", request.access_token[:20] + "..." if len(request.access_token) > 20 else request.access_token)
+        print("Token length:", len(request.access_token))
+        
+        # Check if token is empty or malformed
+        if not request.access_token or len(request.access_token) < 10:
+            print("Token is too short or empty")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token format")
+        
+        # Use the new refresh verification function
+        payload = jwt_utils.verify_token_for_refresh(request.access_token)
         print("REFRESH PAYLOAD:", payload)
+        
         if not payload:
-            print("No payload")
+            print("No payload - JWT verification failed")
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+        
         user_id = payload.get("sub")
         email = payload.get("email")
         print("user_id:", user_id, "email:", email)
+        
         if not user_id or not email:
             print("Missing user_id or email")
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token payload missing required user information")
+        
         user = db.query(User).filter(User.id == user_id).first()
         print("User from DB:", user)
+        
         if not user:
             print("User not found")
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User no longer exists")
+        
         if user.email != email:
             print("Email mismatch:", user.email, email)
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User email mismatch")
-        exp_timestamp = payload.get("exp")
-        if exp_timestamp:
-            exp_datetime = datetime.fromtimestamp(exp_timestamp, tz=timezone.utc)
-            now = datetime.now(timezone.utc)
-            time_until_expiry = exp_datetime - now
-            if time_until_expiry.total_seconds() > 300:
-                print("Token not close to expiry")
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Token is not close to expiration. Refresh only when needed.")
+        
+        # Create new token
         new_payload = {"sub": user_id, "email": email}
         new_token = jwt_utils.create_access_token(new_payload)
-        print("New token created")
+        print("New token created successfully")
+        
         return TokenResponse(access_token=new_token, token_type="bearer")
+        
     except HTTPException:
         raise
     except Exception as e:

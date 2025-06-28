@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useAuth } from '../App';
 import { useProjectStore } from '../store/projectStore';
 import AuditReportCard from '../components/audit/AuditReportCard';
@@ -15,6 +15,7 @@ const Dashboard: React.FC = () => {
   const [allAudits, setAllAudits] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [projectsLoading, setProjectsLoading] = useState(true);
   const { user } = useAuth();
   const { setProjects, selectedProject, projects, setSelectedProject } = useProjectStore();
   const [isGeneratingAudit, setIsGeneratingAudit] = useState(false);
@@ -23,89 +24,28 @@ const Dashboard: React.FC = () => {
   const [selectedAudit, setSelectedAudit] = useState<any>(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const token = localStorage.getItem('access_token');
-        const res = await fetch('/api/project/all-projects', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        if (!res.ok) throw new Error('Failed to fetch projects');
-        const data = await res.json();
-        const userProjects = data.filter((p: any) => p.owner_id === user?.id);
-        setProjects(userProjects);
-      } catch {
-      }
-    };
-    if (user) fetchProjects();
-  }, [user, setProjects]);
-
-  // Redirect to create project if no projects exist (after fetch)
-  useEffect(() => {
-    if (projects && Array.isArray(projects) && projects.length === 0) {
-      navigate('/create-project');
-    }
-  }, [projects, navigate]);
-
-  useEffect(() => {
-    if (selectedProject) {
-      const fetchAudits = async () => {
-        try {
-          const token = localStorage.getItem('access_token');
-          console.log(token)
-          const res = await fetch(`/api/audit/get-all-audits/${selectedProject.id}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          });
-          if (res.ok) {
-            const data = await res.json();
-            setAllAudits(data);
-            setLatestAudit(data[0] || null);
-          } else {
-            setAllAudits([]);
-            setLatestAudit(null);
-          }
-        } catch {
-          setAllAudits([]);
-          setLatestAudit(null);
-        }
-      };
-      fetchAudits();
-    }
-  }, [selectedProject]);
-
-  useEffect(() => {
-    if (allAudits.length > 0) {
-      setSelectedAudit(allAudits[0]);
-    } else {
-      setSelectedAudit(null);
-    }
+  // Memoize chart data to prevent recalculation on every render
+  const chartData = useMemo(() => {
+    return allAudits.map(audit => ({
+      timestamp: new Date(audit.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      overall_score: audit.overall_score,
+      mobile_performance_score: audit.mobile_performance_score,
+      desktop_performance_score: audit.desktop_performance_score,
+      fcp_mobile: audit.pagespeed_data?.mobile?.fcp,
+      lcp_mobile: audit.pagespeed_data?.mobile?.lcp,
+      cls_mobile: audit.pagespeed_data?.mobile?.cls,
+      fid_mobile: audit.pagespeed_data?.mobile?.fid,
+      ttfb_mobile: audit.pagespeed_data?.mobile?.ttfb,
+      fcp_desktop: audit.pagespeed_data?.desktop?.fcp,
+      lcp_desktop: audit.pagespeed_data?.desktop?.lcp,
+      cls_desktop: audit.pagespeed_data?.desktop?.cls,
+      fid_desktop: audit.pagespeed_data?.desktop?.fid,
+      ttfb_desktop: audit.pagespeed_data?.desktop?.ttfb,
+    }));
   }, [allAudits]);
 
-  // Prepare chart data
-  const chartData = allAudits.map(audit => ({
-    timestamp: new Date(audit.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-    overall_score: audit.overall_score,
-    mobile_performance_score: audit.mobile_performance_score,
-    desktop_performance_score: audit.desktop_performance_score,
-    fcp_mobile: audit.pagespeed_data?.mobile?.fcp,
-    lcp_mobile: audit.pagespeed_data?.mobile?.lcp,
-    cls_mobile: audit.pagespeed_data?.mobile?.cls,
-    fid_mobile: audit.pagespeed_data?.mobile?.fid,
-    ttfb_mobile: audit.pagespeed_data?.mobile?.ttfb,
-    fcp_desktop: audit.pagespeed_data?.desktop?.fcp,
-    lcp_desktop: audit.pagespeed_data?.desktop?.lcp,
-    cls_desktop: audit.pagespeed_data?.desktop?.cls,
-    fid_desktop: audit.pagespeed_data?.desktop?.fid,
-    ttfb_desktop: audit.pagespeed_data?.desktop?.ttfb,
-  }));
-
-  const handleGenerateAudit = async () => {
+  // Memoize handleGenerateAudit to prevent recreation on every render
+  const handleGenerateAudit = useCallback(async () => {
     try {
       setIsGeneratingAudit(true);
       setError(null);
@@ -148,10 +88,98 @@ const Dashboard: React.FC = () => {
     } finally {
       setIsGeneratingAudit(false);
     }
-  };
+  }, [selectedProject]);
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      setProjectsLoading(true);
+      try {
+        const token = localStorage.getItem('access_token');
+        const res = await fetch('/api/project/all-projects', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (!res.ok) throw new Error('Failed to fetch projects');
+        const data = await res.json();
+        console.log('All projects from API:', data);
+        console.log('Current user:', user);
+        const userProjects = data.filter((p: any) => p.owner_id === user?.id);
+        console.log('Filtered user projects:', userProjects);
+        setProjects(userProjects);
+      } catch (error) {
+        console.error('Error fetching projects:', error);
+      } finally {
+        setProjectsLoading(false);
+      }
+    };
+    if (user && user.id) {
+      console.log('User is loaded, fetching projects for user ID:', user.id);
+      fetchProjects();
+    } else {
+      console.log('User not loaded yet or missing ID, skipping project fetch');
+      setProjectsLoading(false);
+    }
+  }, [user?.id, setProjects]); // Only depend on user.id instead of entire user object
+
+  // Redirect to create project if no projects exist (after fetch is complete)
+  useEffect(() => {
+    console.log('Redirect check - projectsLoading:', projectsLoading, 'projects:', projects, 'projects.length:', projects?.length);
+    if (!projectsLoading && projects && Array.isArray(projects) && projects.length === 0) {
+      console.log('Redirecting to create-project because no projects found');
+      navigate('/create-project');
+    }
+  }, [projects, projectsLoading, navigate]);
+
+  useEffect(() => {
+    if (selectedProject?.id) { // Only depend on selectedProject.id
+      const fetchAudits = async () => {
+        try {
+          const token = localStorage.getItem('access_token');
+          console.log(token)
+          const res = await fetch(`/api/audit/get-all-audits/${selectedProject.id}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setAllAudits(data);
+            setLatestAudit(data[0] || null);
+          } else {
+            setAllAudits([]);
+            setLatestAudit(null);
+          }
+        } catch {
+          setAllAudits([]);
+          setLatestAudit(null);
+        }
+      };
+      fetchAudits();
+    }
+  }, [selectedProject?.id]); // Only depend on selectedProject.id instead of entire selectedProject object
+
+  useEffect(() => {
+    if (allAudits.length > 0) {
+      setSelectedAudit(allAudits[0]);
+    } else {
+      setSelectedAudit(null);
+    }
+  }, [allAudits]);
 
   if (isGeneratingAudit) {
     return <LoadingScreen />;
+  }
+
+  // Show loading while projects are being fetched
+  if (projectsLoading) {
+    return (
+      <div className="w-full bg-dark-blue flex items-center justify-center min-h-screen">
+        <div className="text-white text-lg">Loading projects...</div>
+      </div>
+    );
   }
 
   return (

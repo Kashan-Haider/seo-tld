@@ -62,15 +62,24 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
   const refreshToken = async (): Promise<boolean> => {
     const token = localStorage.getItem('access_token');
-    if (!token) return false;
+    if (!token) {
+      console.log('No token found in localStorage');
+      return false;
+    }
+
+    // Clean the token (remove quotes if present)
+    const cleanToken = token.replace(/^["']|["']$/g, '');
+    console.log('Attempting to refresh token:', cleanToken.substring(0, 20) + '...');
+    console.log('Token length:', cleanToken.length);
+    console.log('Full token:', cleanToken);
 
     try {
-      const response = await fetch('/auth/refresh-token', {
+      const response = await fetch('/api/auth/refresh-token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ access_token: token })
+        body: JSON.stringify({ access_token: cleanToken })
       });
 
       if (response.ok) {
@@ -78,6 +87,9 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         localStorage.setItem('access_token', data.access_token);
         return await validateToken(data.access_token);
       }
+      console.log('Refresh failed with status:', response.status);
+      const errorText = await response.text();
+      console.log('Error response:', errorText);
       return false;
     } catch (error) {
       console.error('Token refresh error:', error);
@@ -169,9 +181,11 @@ const ProtectedLayout: React.FC = () => {
   }
 
   return isAuthenticated ? (
-    <div className="min-h-screen w-full flex flex-col md:flex-row bg-dark-blue">
+    <div className="h-screen w-full flex flex-col md:flex-row bg-dark-blue overflow-hidden">
       <Sidebar />
-      <Outlet />
+      <main className="flex-1 overflow-y-auto">
+        <Outlet />
+      </main>
     </div>
   ) : <Navigate to="/login" replace />;
 };

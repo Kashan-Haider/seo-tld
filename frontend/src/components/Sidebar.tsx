@@ -16,6 +16,7 @@ const navItems = [
 const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const isOpen = useSidebarStore((state) => state.isOpen);
+  const openSidebar = useSidebarStore((state) => state.open);
   const closeSidebar = useSidebarStore((state) => state.close);
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -26,6 +27,8 @@ const Sidebar: React.FC = () => {
     } else {
       document.body.style.overflow = '';
     }
+    
+    // Cleanup function to ensure body overflow is restored
     return () => {
       document.body.style.overflow = '';
     };
@@ -43,7 +46,7 @@ const Sidebar: React.FC = () => {
         />
         {/* Sidebar panel with slide-in/out animation */}
         <aside
-          className={`fixed left-0 top-0 bottom-0 z-50 w-64 min-h-screen bg-dark-blue/95 border-r border-white/10 p-6 gap-4 flex flex-col transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
+          className={`fixed left-0 top-0 h-screen z-50 w-64 bg-dark-blue/95 border-r border-white/10 p-6 gap-4 flex flex-col transform transition-transform duration-300 ease-in-out overflow-y-auto ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
           style={{ boxShadow: '2px 0 24px 0 rgba(0,0,0,0.2)' }}
         >
           <div className="mb-8 flex items-center gap-2 justify-between">
@@ -69,7 +72,7 @@ const Sidebar: React.FC = () => {
         </aside>
       </div>
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 h-screen bg-dark-blue/80 border-r border-white/10 p-6 gap-4">
+      <aside className="hidden md:flex flex-col w-64 h-screen bg-dark-blue/80 border-r border-white/10 p-6 gap-4 overflow-y-auto">
         <div className="mb-8 flex items-center gap-2">
           <span className="text-2xl font-bold text-white tracking-widest">SEO AGENT</span>
         </div>

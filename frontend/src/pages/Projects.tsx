@@ -36,8 +36,8 @@ const Projects: React.FC = () => {
   }, [user, setProjects]);
 
   return (
-    <div className="min-h-screen w-full flex flex-col bg-dark-blue">
-      <main className="flex-1 min-h-screen flex flex-col bg-dark-blue/90">
+    <div className="w-full flex flex-col bg-dark-blue">
+      <main className="flex-1 flex flex-col bg-dark-blue/90">
         <header className="flex flex-col md:flex-row md:items-center md:justify-between px-4 md:px-8 py-6 border-b border-white/10 bg-dark-blue/80 sticky top-0 z-20 gap-4 md:gap-0">
           <div>
             <div className="text-2xl md:text-3xl font-bold text-white mb-1">Your Projects</div>
