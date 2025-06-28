@@ -41,6 +41,7 @@ const calculateTrend = (current: number, previous: number): { trend: 'up' | 'dow
 };
 
 const StatCards: React.FC<StatCardsProps> = ({ latestAudit, secondLatestAudit }) => {
+  console.log(latestAudit, secondLatestAudit)
   const stats = latestAudit ? [
     {
       icon: <TrendingUp size={22} className="text-accent-blue" />, 

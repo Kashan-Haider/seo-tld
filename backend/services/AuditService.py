@@ -154,8 +154,12 @@ class AuditService:
                     "desktop": desktop_data.dict()
                 },
                 recommendations=recommendations,
+                lighthouse_mobile=extract_lighthouse_useful(mobile_lighthouse),
+                lighthouse_desktop=extract_lighthouse_useful(desktop_lighthouse),
                 audit_date_start=datetime.now(),
-                audit_date_end=datetime.now()
+                audit_date_end=datetime.now(),
+                url=str(project.website_url),
+                timestamp=datetime.now()
             )
             
             db.add(audit_report)

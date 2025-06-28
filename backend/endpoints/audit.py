@@ -6,7 +6,6 @@ from services.AuditService import AuditService
 from db.database import get_db
 from endpoints.auth import get_current_user
 import traceback
-from db.models.auditReport import AuditReport
 
 audit_service = AuditService()
 router = APIRouter(prefix="/audit", tags=["audit"])
@@ -19,34 +18,6 @@ async def create_audit(
 ):
     try:
         result = await audit_service.generate_audit(request, db)
-        # Store audit in DB
-        audit_report = AuditReport(
-            project_id=request.project_id,
-            audit_type=request.audit_type,
-            mobile_performance_score=result.pagespeed_mobile.performance_score,
-            desktop_performance_score=result.pagespeed_desktop.performance_score,
-            mobile_fcp=result.pagespeed_mobile.fcp,
-            mobile_lcp=result.pagespeed_mobile.lcp,
-            mobile_cls=result.pagespeed_mobile.cls,
-            desktop_fcp=result.pagespeed_desktop.fcp,
-            desktop_lcp=result.pagespeed_desktop.lcp,
-            desktop_cls=result.pagespeed_desktop.cls,
-            overall_score=result.overall_score,
-            pagespeed_data={
-                "mobile": result.pagespeed_mobile.dict(),
-                "desktop": result.pagespeed_desktop.dict()
-            },
-            recommendations=result.recommendations,
-            lighthouse_mobile=result.lighthouse_mobile.dict() if result.lighthouse_mobile else None,
-            lighthouse_desktop=result.lighthouse_desktop.dict() if result.lighthouse_desktop else None,
-            audit_date_start=result.timestamp,
-            audit_date_end=result.timestamp,
-            url=result.url,
-            timestamp=result.timestamp
-        )
-        db.add(audit_report)
-        db.commit()
-        db.refresh(audit_report)
         return result
     except Exception as e:
         traceback.print_exc()

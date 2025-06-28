@@ -16,31 +16,44 @@ const Dashboard: React.FC = () => {
   const [search, setSearch] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [projectsLoading, setProjectsLoading] = useState(true);
-  const { user } = useAuth();
-  const { setProjects, selectedProject, projects, setSelectedProject } = useProjectStore();
   const [isGeneratingAudit, setIsGeneratingAudit] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [auditDropdownOpen, setAuditDropdownOpen] = useState(false);
   const [selectedAudit, setSelectedAudit] = useState<any>(null);
+  
+  const { user } = useAuth();
+  const { setProjects, selectedProject, projects, setSelectedProject } = useProjectStore();
   const navigate = useNavigate();
 
   // Get second latest audit for trend calculations
   const secondLatestAudit = allAudits.length > 1 ? allAudits[1] : null;
 
   // Get the audit before the selected audit for trend calculations
-  const getAuditBeforeSelected = () => {
+  const getAuditBeforeSelected = useCallback(() => {
     if (!selectedAudit || allAudits.length <= 1) return null;
     const selectedIndex = allAudits.findIndex(audit => audit.id === selectedAudit.id);
-    if (selectedIndex === -1 || selectedIndex === 0) return null;
+    if (selectedIndex === -1) return null;
+    
+    // If selected audit is the first one, return the second audit
+    if (selectedIndex === 0) {
+      return allAudits.length > 1 ? allAudits[1] : null;
+    }
+    
+    // Otherwise return the audit before the selected one
     return allAudits[selectedIndex + 1]; // +1 because audits are sorted newest first
-  };
+  }, [selectedAudit, allAudits]);
 
   const auditBeforeSelected = getAuditBeforeSelected();
 
   // Memoize chart data to prevent recalculation on every render
   const chartData = useMemo(() => {
     return allAudits.map(audit => ({
-      timestamp: new Date(audit.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      timestamp: new Date(audit.timestamp).toLocaleString(undefined, { 
+        month: 'short', 
+        day: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      }),
       overall_score: audit.overall_score,
       mobile_performance_score: audit.mobile_performance_score,
       desktop_performance_score: audit.desktop_performance_score,
@@ -57,14 +70,43 @@ const Dashboard: React.FC = () => {
     }));
   }, [allAudits]);
 
-  // Memoize handleGenerateAudit to prevent recreation on every render
+  // Fetch audits for the selected project
+  const fetchAudits = useCallback(async (projectId: string) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(`/api/audit/get-all-audits/${projectId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        setAllAudits(data);
+        setLatestAudit(data[0] || null);
+        setSelectedAudit(data[0] || null);
+      } else {
+        setAllAudits([]);
+        setLatestAudit(null);
+        setSelectedAudit(null);
+      }
+    } catch (error) {
+      setAllAudits([]);
+      setLatestAudit(null);
+      setSelectedAudit(null);
+    }
+  }, []);
+
+  // Generate new audit
   const handleGenerateAudit = useCallback(async () => {
     try {
       setIsGeneratingAudit(true);
       setError(null);
+      
       const token = localStorage.getItem('access_token');
       if (!selectedProject) throw new Error('No project selected');
-      console.log("audit requested")
+      
       const res = await fetch('/api/audit', {
         method: 'POST',
         headers: {
@@ -77,106 +119,66 @@ const Dashboard: React.FC = () => {
           url: selectedProject.website_url,
         }),
       });
+      
       if (!res.ok) throw new Error('Failed to generate audit');
+      
       // Wait a moment for backend to process and DB to update
-      await new Promise(r => setTimeout(r, 1200));
+      await new Promise(resolve => setTimeout(resolve, 1200));
+      
       // Refetch audits
-      const auditsRes = await fetch(`/api/audit/get-all-audits/${selectedProject.id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      if (auditsRes.ok) {
-      console.log("audit completed")
-        const data = await auditsRes.json();
-        setAllAudits(data);
-        setLatestAudit(data[0] || null);
-        setSelectedAudit(data[0] || null);
-      } else {
-        setError('Failed to fetch audits after generation');
-      }
+      await fetchAudits(selectedProject.id);
     } catch (e) {
       console.error('Error generating audit:', e);
       setError('An error occurred while generating the audit.');
     } finally {
       setIsGeneratingAudit(false);
     }
-  }, [selectedProject]);
+  }, [selectedProject, fetchAudits]);
 
-  useEffect(() => {
-    const fetchProjects = async () => {
-      setProjectsLoading(true);
-      try {
-        const token = localStorage.getItem('access_token');
-        const res = await fetch('/api/project/all-projects', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        if (!res.ok) throw new Error('Failed to fetch projects');
-        const data = await res.json();
-        console.log('All projects from API:', data);
-        console.log('Current user:', user);
-        const userProjects = data.filter((p: any) => p.owner_id === user?.id);
-        console.log('Filtered user projects:', userProjects);
-        setProjects(userProjects);
-      } catch (error) {
-        console.error('Error fetching projects:', error);
-      } finally {
-        setProjectsLoading(false);
-      }
-    };
-    if (user && user.id) {
-      console.log('User is loaded, fetching projects for user ID:', user.id);
-      fetchProjects();
-    } else {
-      console.log('User not loaded yet or missing ID, skipping project fetch');
+  // Fetch projects
+  const fetchProjects = useCallback(async () => {
+    setProjectsLoading(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch('/api/project/all-projects', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!res.ok) throw new Error('Failed to fetch projects');
+      
+      const data = await res.json();
+      const userProjects = data.filter((p: any) => p.owner_id === user?.id);
+      setProjects(userProjects);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    } finally {
       setProjectsLoading(false);
     }
-  }, [user?.id, setProjects]); // Only depend on user.id instead of entire user object
+  }, [user?.id, setProjects]);
 
-  // Redirect to create project if no projects exist (after fetch is complete)
+  // Effects
   useEffect(() => {
-    console.log('Redirect check - projectsLoading:', projectsLoading, 'projects:', projects, 'projects.length:', projects?.length);
+    if (user?.id) {
+      fetchProjects();
+    } else {
+      setProjectsLoading(false);
+    }
+  }, [user?.id, fetchProjects]);
+
+  useEffect(() => {
     if (!projectsLoading && projects && Array.isArray(projects) && projects.length === 0) {
-      console.log('Redirecting to create-project because no projects found');
       navigate('/create-project');
     }
   }, [projects, projectsLoading, navigate]);
 
   useEffect(() => {
-    if (selectedProject?.id) { // Only depend on selectedProject.id
-      const fetchAudits = async () => {
-        try {
-          const token = localStorage.getItem('access_token');
-          console.log(token)
-          const res = await fetch(`/api/audit/get-all-audits/${selectedProject.id}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          });
-          if (res.ok) {
-            const data = await res.json();
-            setAllAudits(data);
-            setLatestAudit(data[0] || null);
-            setSelectedAudit(data[0] || null);
-          } else {
-            setAllAudits([]);
-            setLatestAudit(null);
-            setSelectedAudit(null);
-          }
-        } catch {
-          setAllAudits([]);
-          setLatestAudit(null);
-          setSelectedAudit(null);
-        }
-      };
-      fetchAudits();
+    if (selectedProject?.id) {
+      fetchAudits(selectedProject.id);
     }
-  }, [selectedProject?.id]); // Only depend on selectedProject.id instead of entire selectedProject object
+  }, [selectedProject?.id, fetchAudits]);
 
   useEffect(() => {
     if (allAudits.length > 0) {
@@ -190,7 +192,6 @@ const Dashboard: React.FC = () => {
     return <LoadingScreen />;
   }
 
-  // Show loading while projects are being fetched
   if (projectsLoading) {
     return (
       <div className="w-full bg-dark-blue flex items-center justify-center min-h-screen">
@@ -218,7 +219,6 @@ const Dashboard: React.FC = () => {
         handleGenerateAudit={handleGenerateAudit}
       />
       <main className="block bg-dark-blue/90 px-4 lg:px-8 py-8 w-full">
-        {/* If no audits for selected project, show NoAudits */}
         {selectedProject && allAudits.length === 0 ? (
           <div className="flex flex-col items-center justify-center w-full">
             <NoAudits
@@ -230,12 +230,9 @@ const Dashboard: React.FC = () => {
           </div>
         ) : (
           <>
-            {/* Stat Cards Row */}
             <StatCards latestAudit={selectedAudit} secondLatestAudit={auditBeforeSelected} />
             
-            {/* Main Content Grid: Audit Report Card left, Trends right */}
             <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8 items-center lg:items-start">
-              {/* Left: Audit Report Card */}
               <div className="col-span-2 flex flex-col gap-6">
                 <AuditReportCard
                   url={selectedAudit?.url}
@@ -247,11 +244,9 @@ const Dashboard: React.FC = () => {
                   pagespeed_data={selectedAudit?.pagespeed_data}
                 />
               </div>
-              {/* Right: Mobile and Desktop Trends stacked vertically */}
               <MetricsTrends chartData={chartData} />
-        </div>
+            </div>
             
-            {/* Performance Score History and Audit History section */}
             <PerformanceHistory chartData={chartData} allAudits={allAudits} />
           </>
         )}
