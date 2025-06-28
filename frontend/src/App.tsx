@@ -12,6 +12,8 @@ import Dashboard from './pages/Dashboard';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import Projects from './pages/projects/Projects';
+import Opportunities from './pages/audit/Opportunities';
+import Diagnostics from './pages/audit/Diagnostics';
 import type { AuthContextType } from './typing';
 
 
@@ -216,6 +218,8 @@ const App = () => {
             <Route path="/create-project" element={<CreateProject />} />
             <Route path="/projects" element={<Projects/>} />
             <Route path="/project/:id" element={<div>Project Details Page (Coming Soon)</div>} />
+            <Route path="/audit/:auditId/opportunities" element={<Opportunities />} />
+            <Route path="/audit/:auditId/diagnostics" element={<Diagnostics />} />
             {/* Add more protected routes here */}
           </Route>
 

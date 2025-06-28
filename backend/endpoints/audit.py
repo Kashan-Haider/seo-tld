@@ -92,3 +92,21 @@ async def get_all_audits(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve all audits: {str(e)}"
         )
+
+@router.get("/by-id/{audit_id}", response_model=AuditReportResponse)
+async def get_audit_by_id(
+    audit_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        audit = audit_service.get_audit_by_id(audit_id, db)
+        if not audit:
+            raise HTTPException(status_code=404, detail="Audit not found")
+        return audit
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve audit: {str(e)}"
+        )

@@ -1,5 +1,7 @@
 import React from 'react';
 import { RadialBarChart, RadialBar, PolarAngleAxis, ResponsiveContainer } from 'recharts';
+import { useNavigate } from 'react-router-dom';
+import { ExternalLink } from 'lucide-react';
 import type { AuditReportCardProps, Opportunity } from '../../typing';
 
 const CircularScore: React.FC<{ label: string; score: number; color: string }> = ({ label, score, color }) => (
@@ -41,6 +43,7 @@ function isOpportunityArray(arr: any[]): arr is Opportunity[] {
 }
 
 const AuditReportCard: React.FC<AuditReportCardProps> = ({
+  auditId,
   url,
   timestamp,
   overall_score,
@@ -49,6 +52,8 @@ const AuditReportCard: React.FC<AuditReportCardProps> = ({
   recommendations,
   pagespeed_data,
 }) => {
+  const navigate = useNavigate();
+
   // Defensive: handle missing or incomplete data
   if (!pagespeed_data || !pagespeed_data.mobile || !pagespeed_data.desktop) {
     return (
@@ -58,6 +63,14 @@ const AuditReportCard: React.FC<AuditReportCardProps> = ({
       </div>
     );
   }
+
+  const handleOpportunitiesClick = () => {
+    navigate(`/audit/${auditId}/opportunities`);
+  };
+
+  const handleDiagnosticsClick = () => {
+    navigate(`/audit/${auditId}/diagnostics`);
+  };
 
   return (
     <div className="w-full mx-auto bg-gradient-to-br from-dark-blue via-medium-blue to-dark-blue rounded-3xl shadow-2xl border border-white/10 p-6 md:p-10 mb-8 flex flex-col gap-6 animate-fade-in">
@@ -85,7 +98,13 @@ const AuditReportCard: React.FC<AuditReportCardProps> = ({
             <Metric label="TTFB" value={pagespeed_data.mobile.ttfb} unit="ms" />
           </div>
           <div className="mt-3">
-            <div className="text-xs text-white/60 mb-1">Top Opportunities</div>
+            <button
+              onClick={handleOpportunitiesClick}
+              className="text-xs text-accent-blue hover:text-accent-blue/80 mb-1 flex items-center gap-1 transition-colors cursor-pointer"
+            >
+              Top Opportunities
+              <ExternalLink className="w-3 h-3" />
+            </button>
             <ul className="list-disc list-inside text-white/90 text-base">
               {pagespeed_data.mobile.opportunities.slice(0, 3).map((op, i) => (
                 <li key={i}>{op.title} <span className="text-accent-blue">({op.savings_ms}ms)</span></li>
@@ -93,7 +112,13 @@ const AuditReportCard: React.FC<AuditReportCardProps> = ({
             </ul>
           </div>
           <div className="mt-2">
-            <div className="text-xs text-white/60 mb-1">Diagnostics</div>
+            <button
+              onClick={handleDiagnosticsClick}
+              className="text-xs text-accent-blue hover:text-accent-blue/80 mb-1 flex items-center gap-1 transition-colors cursor-pointer"
+            >
+              Diagnostics
+              <ExternalLink className="w-3 h-3" />
+            </button>
             <ul className="list-disc list-inside text-white/80 text-base">
               {pagespeed_data.mobile.diagnostics.slice(0, 3).map((diag, i) => (
                 <li key={i}>{diag.title}: <span className="text-accent-blue">{diag.score}</span></li>
@@ -112,7 +137,13 @@ const AuditReportCard: React.FC<AuditReportCardProps> = ({
             <Metric label="TTFB" value={pagespeed_data.desktop.ttfb} unit="ms" />
           </div>
           <div className="mt-3">
-            <div className="text-xs text-white/60 mb-1">Top Opportunities</div>
+            <button
+              onClick={handleOpportunitiesClick}
+              className="text-xs text-light-purple hover:text-light-purple/80 mb-1 flex items-center gap-1 transition-colors cursor-pointer"
+            >
+              Top Opportunities
+              <ExternalLink className="w-3 h-3" />
+            </button>
             <ul className="list-disc list-inside text-white/90 text-base">
               {pagespeed_data.desktop.opportunities.slice(0, 3).map((op, i) => (
                 <li key={i}>{op.title} <span className="text-light-purple">({op.savings_ms}ms)</span></li>
@@ -120,7 +151,13 @@ const AuditReportCard: React.FC<AuditReportCardProps> = ({
             </ul>
           </div>
           <div className="mt-2">
-            <div className="text-xs text-white/60 mb-1">Diagnostics</div>
+            <button
+              onClick={handleDiagnosticsClick}
+              className="text-xs text-light-purple hover:text-light-purple/80 mb-1 flex items-center gap-1 transition-colors cursor-pointer"
+            >
+              Diagnostics
+              <ExternalLink className="w-3 h-3" />
+            </button>
             <ul className="list-disc list-inside text-white/80 text-base">
               {pagespeed_data.desktop.diagnostics.slice(0, 3).map((diag, i) => (
                 <li key={i}>{diag.title}: <span className="text-light-purple">{diag.score}</span></li>

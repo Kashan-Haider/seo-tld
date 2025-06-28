@@ -85,6 +85,7 @@ export interface PageSpeedData {
 }
 
 export interface AuditReportCardProps {
+  auditId: string;
   url: string;
   timestamp: string;
   overall_score: number;

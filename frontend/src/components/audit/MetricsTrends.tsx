@@ -1,5 +1,5 @@
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Smartphone, Monitor } from 'lucide-react';
 
 interface CustomTooltipProps {
@@ -39,16 +39,16 @@ const MetricsTrends: React.FC<MetricsTrendsProps> = ({ chartData }) => {
           <Smartphone className="text-accent-blue" /> Mobile Metrics Trends
         </div>
         <ResponsiveContainer width="100%" height={250}>
-          <LineChart data={chartData} margin={{ top: 20, right: 40, left: 0, bottom: 0 }}>
+          <AreaChart data={chartData} margin={{ top: 20, right: 40, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#222b45" />
             <XAxis dataKey="timestamp" stroke="#A259FF" fontSize={12} angle={-20} height={60} tick={{ fill: '#a3aed6' }} />
             <YAxis stroke="#00C9FF" fontSize={12} tick={{ fill: '#a3aed6' }} />
             <Tooltip content={<CustomTooltip />} />
             <Legend iconType="circle" />
-            <Line type="monotone" dataKey="fcp_mobile" stroke="#00C9FF" strokeWidth={2} name="FCP (s)" />
-            <Line type="monotone" dataKey="lcp_mobile" stroke="#A259FF" strokeWidth={2} name="LCP (s)" />
-            <Line type="monotone" dataKey="cls_mobile" stroke="#FF7A59" strokeWidth={2} name="CLS" />
-          </LineChart>
+            <Area type="monotone" dataKey="fcp_mobile" stroke="#00C9FF" fill="#00C9FF" fillOpacity={0.3} strokeWidth={2} name="FCP (s)" />
+            <Area type="monotone" dataKey="lcp_mobile" stroke="#A259FF" fill="#A259FF" fillOpacity={0.3} strokeWidth={2} name="LCP (s)" />
+            <Area type="monotone" dataKey="cls_mobile" stroke="#FF7A59" fill="#FF7A59" fillOpacity={0.3} strokeWidth={2} name="CLS" />
+          </AreaChart>
         </ResponsiveContainer>
       </div>
       {/* Desktop Metrics Trends */}
@@ -57,16 +57,16 @@ const MetricsTrends: React.FC<MetricsTrendsProps> = ({ chartData }) => {
           <Monitor className="text-light-purple" /> Desktop Metrics Trends
         </div>
         <ResponsiveContainer width="100%" height={250}>
-          <LineChart data={chartData} margin={{ top: 20, right: 40, left: 0, bottom: 0 }}>
+          <AreaChart data={chartData} margin={{ top: 20, right: 40, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#222b45" />
             <XAxis dataKey="timestamp" stroke="#A259FF" fontSize={12} angle={-20} height={60} tick={{ fill: '#a3aed6' }} />
             <YAxis stroke="#00C9FF" fontSize={12} tick={{ fill: '#a3aed6' }} />
             <Tooltip content={<CustomTooltip />} />
             <Legend iconType="circle" />
-            <Line type="monotone" dataKey="fcp_desktop" stroke="#A259FF" strokeWidth={2} name="FCP (s)" />
-            <Line type="monotone" dataKey="lcp_desktop" stroke="#00C9FF" strokeWidth={2} name="LCP (s)" />
-            <Line type="monotone" dataKey="cls_desktop" stroke="#FF7A59" strokeWidth={2} name="CLS" />
-          </LineChart>
+            <Area type="monotone" dataKey="fcp_desktop" stroke="#A259FF" fill="#A259FF" fillOpacity={0.3} strokeWidth={2} name="FCP (s)" />
+            <Area type="monotone" dataKey="lcp_desktop" stroke="#00C9FF" fill="#00C9FF" fillOpacity={0.3} strokeWidth={2} name="LCP (s)" />
+            <Area type="monotone" dataKey="cls_desktop" stroke="#FF7A59" fill="#FF7A59" fillOpacity={0.3} strokeWidth={2} name="CLS" />
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </div>

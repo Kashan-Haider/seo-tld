@@ -235,6 +235,7 @@ const Dashboard: React.FC = () => {
             <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8 items-center lg:items-start">
               <div className="col-span-2 flex flex-col gap-6">
                 <AuditReportCard
+                  auditId={selectedAudit?.id?.toString() || 'latest'}
                   url={selectedAudit?.url}
                   timestamp={selectedAudit?.timestamp}
                   overall_score={selectedAudit?.overall_score}

@@ -8,6 +8,7 @@ from db.models.project import Project
 from db.database import get_db
 from fastapi import HTTPException
 import traceback
+from typing import Optional
 
 class AuditService:
     def __init__(self):
@@ -188,6 +189,12 @@ class AuditService:
         ).order_by(AuditReport.created_at.desc()).all()
         
         return [AuditReportResponse.from_orm(audit) for audit in audits]
+    
+    def get_audit_by_id(self, audit_id: int, db: Session) -> Optional[AuditReportResponse]:
+        audit = db.query(AuditReport).filter(AuditReport.id == audit_id).first()
+        if audit:
+            return AuditReportResponse.from_orm(audit)
+        return None
     
     def _calculate_overall_score(self, mobile_data, desktop_data) -> int:
         mobile_weight = 0.6
