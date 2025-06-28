@@ -135,6 +135,21 @@ const Dashboard: React.FC = () => {
     }
   }, [selectedProject, fetchAudits]);
 
+  // Handle audit deletion
+  const handleAuditDeleted = useCallback((auditId: number) => {
+    // Remove the deleted audit from the local state
+    setAllAudits(prevAudits => prevAudits.filter(audit => audit.id !== auditId));
+    
+    // Update selected audit if the deleted one was selected
+    setSelectedAudit((prevSelected: any) => {
+      if (prevSelected?.id === auditId) {
+        const remainingAudits = allAudits.filter(audit => audit.id !== auditId);
+        return remainingAudits.length > 0 ? remainingAudits[0] : null;
+      }
+      return prevSelected;
+    });
+  }, [allAudits]);
+
   // Fetch projects
   const fetchProjects = useCallback(async () => {
     setProjectsLoading(true);
@@ -248,7 +263,7 @@ const Dashboard: React.FC = () => {
               <MetricsTrends chartData={chartData} />
             </div>
             
-            <PerformanceHistory chartData={chartData} allAudits={allAudits} />
+            <PerformanceHistory chartData={chartData} allAudits={allAudits} onAuditDeleted={handleAuditDeleted} />
           </>
         )}
       </main>

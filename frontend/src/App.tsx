@@ -1,5 +1,6 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
 import CreateProject from './pages/projects/CreateProject';
@@ -200,6 +201,32 @@ const App = () => {
   return (
     <AuthProvider>
       <Router>
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: 'linear-gradient(135deg, #0f1535 0%, #1e2a5a 100%)',
+              color: '#ffffff',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '12px',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+              backdropFilter: 'blur(10px)',
+            },
+            success: {
+              iconTheme: {
+                primary: '#22d3ee',
+                secondary: '#ffffff',
+              },
+            },
+            error: {
+              iconTheme: {
+                primary: '#ef4444',
+                secondary: '#ffffff',
+              },
+            },
+          }}
+        />
         <Routes>
           {/* Public routes */}
           <Route path="/auth/callback" element={<AuthCallback />} />

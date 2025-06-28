@@ -37,6 +37,40 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   },
   setSelectedProject: (project) => set({ selectedProject: project }),
   clearSelectedProject: () => set({ selectedProject: null }),
+  deleteProject: async (projectId: string) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`/api/project/delete-project/${projectId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete project');
+      }
+
+      // Remove the project from local state
+      const currentState = get();
+      const updatedProjects = currentState.projects.filter((p: Project) => p.id !== projectId);
+      
+      // Update selected project if the deleted one was selected
+      let selectedProject = currentState.selectedProject;
+      if (currentState.selectedProject?.id === projectId) {
+        selectedProject = updatedProjects.length > 0 
+          ? updatedProjects.reduce((a: Project, b: Project) => (new Date(a.created_at) > new Date(b.created_at) ? a : b))
+          : null;
+      }
+
+      set({ projects: updatedProjects, selectedProject });
+      return true;
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      throw error;
+    }
+  },
 }));
 
 // Audit zustand store

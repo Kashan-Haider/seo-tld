@@ -196,6 +196,15 @@ class AuditService:
             return AuditReportResponse.from_orm(audit)
         return None
     
+    def delete_audit(self, audit_id: int, db: Session) -> bool:
+        audit = db.query(AuditReport).filter(AuditReport.id == audit_id).first()
+        if not audit:
+            return False
+        
+        db.delete(audit)
+        db.commit()
+        return True
+    
     def _calculate_overall_score(self, mobile_data, desktop_data) -> int:
         mobile_weight = 0.6
         desktop_weight = 0.4

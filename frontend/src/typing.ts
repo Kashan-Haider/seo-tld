@@ -17,6 +17,7 @@ export interface ProjectState {
   setProjectsWithAutoSelect: (projects: Project[]) => void;
   setSelectedProject: (project: Project) => void;
   clearSelectedProject: () => void;
+  deleteProject: (projectId: string) => Promise<boolean>;
 }
 
 export interface SidebarState {

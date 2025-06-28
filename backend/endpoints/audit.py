@@ -110,3 +110,21 @@ async def get_audit_by_id(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve audit: {str(e)}"
         )
+
+@router.delete("/{audit_id}")
+async def delete_audit(
+    audit_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        success = audit_service.delete_audit(audit_id, db)
+        if not success:
+            raise HTTPException(status_code=404, detail="Audit not found")
+        return {"message": f"Audit {audit_id} deleted successfully"}
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete audit: {str(e)}"
+        )
