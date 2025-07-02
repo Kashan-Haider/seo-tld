@@ -1,6 +1,7 @@
 from db.database import engine, SessionLocal
-from db.models import Base, User, Project
+from db.models import  User, Project
 from sqlalchemy.orm import Session
+from db.database import Base
 
 def init_db():
     # Create all tables

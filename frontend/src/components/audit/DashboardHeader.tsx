@@ -78,17 +78,6 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
         {/* Audit Controls */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 lg:gap-4 w-full lg:w-auto">
-          {/* Project Info Card */}
-          <div className="hidden sm:block">
-            <div className="h-12 px-4 rounded-xl bg-gradient-to-br from-medium-blue/60 to-medium-blue/40 border border-white/10 flex items-center gap-2 backdrop-blur-sm">
-              <Grid3X3 size={16} className="text-accent-blue" />
-              <span className="text-xs text-white/70 font-medium">PROJECT</span>
-              <span className="text-sm text-white font-semibold truncate max-w-32">
-                {selectedProject?.name || 'Select Project'}
-              </span>
-            </div>
-          </div>
-
           {/* Audit Selection */}
           {allAudits.length > 0 && (
             <div className="relative w-full sm:w-auto">

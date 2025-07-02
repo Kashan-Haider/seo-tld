@@ -9,6 +9,7 @@ from endpoints.project import router as project_router
 from endpoints.audit import router as audit_router
 from endpoints.user import router as user_router
 from endpoints.auth import router as auth_router
+from endpoints.keyword import router as keyword_router
 from dotenv import load_dotenv
 import os
 
@@ -41,3 +42,4 @@ app.include_router(project_router)
 app.include_router(audit_router)
 app.include_router(user_router)
 app.include_router(auth_router)
+app.include_router(keyword_router)
