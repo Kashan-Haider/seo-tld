@@ -33,7 +33,7 @@ const LoadingOverlay: React.FC = () => {
           {messages[msgIdx]}
         </div>
         <div className="mt-2 text-white text-base animate-fade-in">
-          Please wait while we generate your advanced keywords. It may take a few minutes.
+          Please wait while we generate your keywords. It may take a few minutes.
         </div>
       </div>
       <div className="flex gap-2 mt-4">

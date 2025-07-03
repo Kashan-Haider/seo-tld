@@ -1,85 +1,78 @@
 import requests
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Set, Optional
 from langchain_google_genai import ChatGoogleGenerativeAI
 import os
 import re
-import random
-import time
 import json
 import nltk
 import urllib.parse
 from datetime import datetime
+import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Ensure stopwords are downloaded and loaded once
 try:
     from nltk.corpus import stopwords
-    _ = stopwords.words('english')
+    STOPWORDS = set(stopwords.words('english'))
 except LookupError:
     nltk.download('stopwords')
     from nltk.corpus import stopwords
+    STOPWORDS = set(stopwords.words('english'))
 
-class KeywordResearchService:
+class KeywordGenerationService:
+    """
+    Service for generating and analyzing SEO keywords using LLMs and web data.
+    """
+
     @staticmethod
     def expand_seeds_gemini(seed: str, top_n: int = 10) -> List[str]:
+        """
+        Use Gemini LLM to generate keyword ideas from a seed.
+        """
         api_key = os.getenv('GOOGLE_API_KEY')
         if not api_key:
-            print("[KeywordGen] ERROR: GOOGLE_API_KEY not found, skipping Gemini expansion")
+            logger.error("[KeywordGen] GOOGLE_API_KEY not found, skipping Gemini expansion")
             return []
         llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
         prompt = (
-            f"Generate 10 Google-search-style keyword phrases related to '{seed}'. "
-            "Return only comma-separated keywords, no numbering."
-        )
+    f"Generate 10 short, high-impact keywords related to '{seed}'. "
+    f"Focus on 1-3 word phrases that people actually type in search boxes. "
+    f"Prioritize popular, specific terms with strong search volume potential. "
+    f"Output format: keyword1, keyword2, keyword3..."
+)
         response = llm.invoke(prompt)
         content = response.content
         if isinstance(content, list):
             content = ','.join(str(x) for x in content)
         keywords = [k.strip() for k in content.split(',') if k.strip()]
-        print(f"[KeywordGen] Gemini expanded keywords: {keywords}")
+        logger.info(f"[KeywordGen] Gemini expanded keywords: {keywords}")
         return keywords[:top_n]
 
     @staticmethod
     def dedupe_and_filter(keywords: List[str]) -> List[str]:
-        sw = set(stopwords.words('english'))
+        """
+        Remove duplicates and stopwords from keyword list.
+        """
         seen = set()
         filtered = []
         for k in keywords:
             norm = k.lower().strip()
-            if len(norm) < 3 or norm in sw or norm in seen:
+            if len(norm) < 3 or norm in STOPWORDS or norm in seen:
                 continue
             seen.add(norm)
             filtered.append(k)
-        print(f"[KeywordGen] After dedupe/filter: {filtered}")
+        logger.info(f"[KeywordGen] After dedupe/filter: {filtered}")
         return filtered
 
     @staticmethod
-    def cluster_keywords_gemini(keywords: List[str]) -> Dict[str, List[str]]:
-        api_key = os.getenv('GOOGLE_API_KEY')
-        if not api_key:
-            print("[KeywordGen] ERROR: GOOGLE_API_KEY not found, skipping Gemini clustering")
-            return {k: [k] for k in keywords}
-        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
-        prompt = (
-            "Cluster these keywords into synonym groups. Return a JSON object where each key is a cluster name and the value is a list of keywords. "
-            f"Keywords: {json.dumps(keywords)}"
-        )
-        response = llm.invoke(prompt)
-        try:
-            content = response.content
-            if isinstance(content, dict):
-                clusters = content
-            elif isinstance(content, str):
-                clusters = json.loads(content)
-            else:
-                raise ValueError(f"Unexpected LLM response type: {type(content)}")
-            print(f"[KeywordGen] Gemini clustered into {len(clusters)} groups: {list(clusters.keys())}")
-            return clusters
-        except Exception as e:
-            print(f"[KeywordGen] ERROR parsing clusters: {e}")
-            print(f"[KeywordGen] Raw Gemini response: {getattr(response, 'content', response)}")
-            return {k: [k] for k in keywords}
-
-    @staticmethod
     def fetch_suggestion_count(keyword: str) -> int:
+        """
+        Fetch the number of autocomplete suggestions for a keyword from Google, Bing, and YouTube.
+        """
         def google():
             try:
                 url = f'https://suggestqueries.google.com/complete/search?client=firefox&q={urllib.parse.quote(keyword)}'
@@ -87,7 +80,7 @@ class KeywordResearchService:
                 if r.status_code == 200:
                     return len(r.json()[1])
             except Exception as e:
-                print(f"[Suggest] Google error: {e}")
+                logger.warning(f"[Suggest] Google error: {e}")
             return 0
         def bing():
             try:
@@ -96,7 +89,7 @@ class KeywordResearchService:
                 if r.status_code == 200:
                     return len(r.json()[1])
             except Exception as e:
-                print(f"[Suggest] Bing error: {e}")
+                logger.warning(f"[Suggest] Bing error: {e}")
             return 0
         def youtube():
             try:
@@ -105,32 +98,18 @@ class KeywordResearchService:
                 if r.status_code == 200:
                     return len(r.json()[1])
             except Exception as e:
-                print(f"[Suggest] YouTube error: {e}")
+                logger.warning(f"[Suggest] YouTube error: {e}")
             return 0
-        def soovle():
-            try:
-                url = f'https://soovle.com/?q={urllib.parse.quote(keyword)}'
-                r = requests.get(url, timeout=8)
-                if r.status_code == 200:
-                    return r.text.count('<div class="tag">')
-            except Exception as e:
-                print(f"[Suggest] Soovle error: {e}")
-            return 0
-        def keywordsheeter():
-            try:
-                url = f'https://keywordsheeter.com/?term={urllib.parse.quote(keyword)}'
-                r = requests.get(url, timeout=8)
-                if r.status_code == 200:
-                    return r.text.count('<li class="suggestion">')
-            except Exception as e:
-                print(f"[Suggest] KeywordSheeter error: {e}")
-            return 0
-        total = google() + bing() + youtube() + soovle() + keywordsheeter()
-        print(f"[KeywordGen] '{keyword}' suggestion count: {total}")
+        # Only use reliable sources
+        total = google() + bing() + youtube()
+        logger.info(f"[KeywordGen] '{keyword}' suggestion count: {total}")
         return total
 
     @staticmethod
     def fetch_serp_word_density(keyword: str) -> float:
+        """
+        Fetch the word count from the Google SERP for a keyword.
+        """
         try:
             url = f'https://www.google.com/search?q={urllib.parse.quote(keyword)}'
             headers = {'User-Agent': 'Mozilla/5.0 (compatible; KeywordBot/1.0)'}
@@ -141,14 +120,62 @@ class KeywordResearchService:
                 text = re.sub(r'<[^>]+>', '', text)
                 words = re.findall(r'\w+', text)
                 word_count = len(words)
-                print(f"[KeywordGen] '{keyword}' SERP word count: {word_count}")
+                logger.info(f"[KeywordGen] '{keyword}' SERP word count: {word_count}")
                 return word_count
         except Exception as e:
-            print(f"[KeywordGen] SERP fetch error for '{keyword}': {e}")
+            logger.warning(f"[KeywordGen] SERP fetch error for '{keyword}': {e}")
         return 0.0
 
     @staticmethod
-    def calculate_keyword_difficulty(search_volume, keyword, features, intent, suggestion_count):
+    def get_llm_metrics_batch(keywords: List[str], suggestion_counts: List[int], serp_word_densities: List[float]) -> List[Optional[Dict[str, Any]]]:
+        """
+        Batch LLM call for metrics for a list of keywords. Returns a list of dicts or None.
+        """
+        api_key = os.getenv('GOOGLE_API_KEY')
+        if not api_key:
+            logger.warning("[KeywordGen] No GOOGLE_API_KEY for LLM metrics, using fallback.")
+            return [None] * len(keywords)
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
+        prompt = (
+            "Given the following keyword research data, generate realistic SEO metrics for each keyword. "
+            "Return only a valid JSON array, each element with these fields: keyword (string), search_volume (int), keyword_difficulty (0-100 int), cpc_usd (float), competitive_density (0-1 float), intent (string: Commercial/Informational/Navigational), features (list of strings). "
+            "Do not return any explanation, markdown, or code block.\n"
+        )
+        # Compose the batch data
+        batch_data = [
+            {
+                "keyword": k,
+                "suggestion_count": s,
+                "serp_word_count": w
+            }
+            for k, s, w in zip(keywords, suggestion_counts, serp_word_densities)
+        ]
+        prompt += f"\nData: {json.dumps(batch_data)}"
+        try:
+            response = llm.invoke(prompt)
+            content = response.content
+            logger.info(f"[KeywordGen] Raw LLM batch response: {content}")
+            if isinstance(content, list):
+                return [item if isinstance(item, dict) else None for item in content]
+            elif isinstance(content, str):
+                # Try to parse JSON array
+                try:
+                    data = json.loads(content)
+                    if isinstance(data, list):
+                        return data
+                except Exception:
+                    # Try to extract JSON array from string
+                    match = re.search(r'\[.*\]', content, re.DOTALL)
+                    if match:
+                        return json.loads(match.group(0))
+            logger.warning(f"[KeywordGen] LLM batch response could not be parsed: {content}")
+            return [None] * len(keywords)
+        except Exception as e:
+            logger.warning(f"[KeywordGen] LLM metrics error: {e}")
+            return [None] * len(keywords)
+
+    @staticmethod
+    def calculate_keyword_difficulty(search_volume: int, keyword: str, features: List[str], intent: str, suggestion_count: int) -> int:
         score = 0
         if search_volume > 10000:
             score += 30
@@ -164,70 +191,42 @@ class KeywordResearchService:
             score += 10
         if suggestion_count > 10:
             score += 10
+        import random
         score += random.randint(-5, 5)
         return max(10, min(95, score))
 
     @staticmethod
-    def get_llm_metrics(keyword, suggestion_count, serp_word_density):
-        api_key = os.getenv('GOOGLE_API_KEY')
-        if not api_key:
-            print("[KeywordGen] No GOOGLE_API_KEY for LLM metrics, using fallback.")
-            return None
-        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
-        prompt = (
-            f"""
-            Given the following keyword research data, generate realistic SEO metrics for the keyword. 
-            Return only a valid JSON object with these fields: search_volume (int), keyword_difficulty (0-100 int), cpc_usd (float), competitive_density (0-1 float), intent (string: Commercial/Informational/Navigational), features (list of strings).
-            Do not return any explanation, markdown, or code block.
-            Keyword: '{keyword}'
-            Suggestion count: {suggestion_count}
-            SERP word count: {serp_word_density}
-            """
-        )
-        try:
-            response = llm.invoke(prompt)
-            content = response.content
-            print(f"[KeywordGen] Raw LLM response: {content}")
-            try:
-                if isinstance(content, dict):
-                    data = content
-                elif isinstance(content, str):
-                    data = json.loads(content)
-                else:
-                    raise ValueError(f"Unexpected LLM response type: {type(content)}")
-                # Validate required fields
-                for field in ["search_volume", "keyword_difficulty", "cpc_usd", "competitive_density", "intent", "features"]:
-                    if field not in data:
-                        print(f"[KeywordGen] LLM missing field: {field}")
-                        return None
-                return data
-            except Exception as e:
-                # fallback to regex if needed
-                if isinstance(content, str):
-                    match = re.search(r'\{.*\}', content, re.DOTALL)
-                    if match:
-                        data = json.loads(match.group(0))
-                    else:
-                        print(f"[KeywordGen] LLM response did not contain JSON: {content}")
-                        return None
-                else:
-                    print(f"[KeywordGen] LLM response was not a string: {type(content)}")
-                    return None
-        except Exception as e:
-            print(f"[KeywordGen] LLM metrics error: {e}")
-            return None
-
-    @staticmethod
-    def generate_advanced_keywords(seed: str, lang: str = 'en', country: str = 'us', top_n: int = 10):
-        print(f"[KeywordGen] === Starting advanced keyword workflow for '{seed}' ===")
-        raw_keywords = KeywordResearchService.expand_seeds_gemini(seed, top_n=top_n)
-        filtered_keywords = KeywordResearchService.dedupe_and_filter(raw_keywords)
+    def generate_advanced_keywords(seed: str, lang: str = 'en', country: str = 'us', top_n: int = 10) -> Dict[str, Any]:
+        """
+        Main workflow: generate, filter, and analyze keywords with parallel web requests and batch LLM calls.
+        """
+        logger.info(f"[KeywordGen] === Starting advanced keyword workflow for '{seed}' ===")
+        raw_keywords = KeywordGenerationService.expand_seeds_gemini(seed, top_n=top_n)
+        filtered_keywords = KeywordGenerationService.dedupe_and_filter(raw_keywords)
         metrics = []
         llm_metrics_list = []
-        for k in filtered_keywords:
-            suggestion_count = KeywordResearchService.fetch_suggestion_count(k)
-            serp_word_density = KeywordResearchService.fetch_serp_word_density(k)
-            llm_metrics = KeywordResearchService.get_llm_metrics(k, suggestion_count, serp_word_density)
+        # Parallelize web requests for suggestion count and SERP word density
+        suggestion_counts = [0] * len(filtered_keywords)
+        serp_word_densities = [0.0] * len(filtered_keywords)
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            future_to_idx = {}
+            for idx, k in enumerate(filtered_keywords):
+                future_to_idx[executor.submit(KeywordGenerationService.fetch_suggestion_count, k)] = ("suggestion", idx)
+                future_to_idx[executor.submit(KeywordGenerationService.fetch_serp_word_density, k)] = ("serp", idx)
+            for future in as_completed(future_to_idx):
+                typ, idx = future_to_idx[future]
+                try:
+                    result = future.result()
+                    if typ == "suggestion":
+                        suggestion_counts[idx] = result
+                    else:
+                        serp_word_densities[idx] = result
+                except Exception as e:
+                    logger.warning(f"[KeywordGen] Error in parallel web request: {e}")
+        # Batch LLM metrics
+        llm_metrics_batch = KeywordGenerationService.get_llm_metrics_batch(filtered_keywords, suggestion_counts, serp_word_densities)
+        for i, k in enumerate(filtered_keywords):
+            llm_metrics = llm_metrics_batch[i] if llm_metrics_batch and i < len(llm_metrics_batch) else None
             if isinstance(llm_metrics, dict):
                 metrics.append({
                     "keyword": k,
@@ -241,7 +240,8 @@ class KeywordResearchService:
                 llm_metrics_list.append({"keyword": k, **llm_metrics})
             else:
                 # fallback to heuristic
-                base_volume = suggestion_count * random.randint(100, 300)
+                import random
+                base_volume = suggestion_counts[i] * random.randint(100, 300)
                 if len(k.split()) > 3:
                     base_volume = int(base_volume * random.uniform(0.4, 0.7))
                 search_volume = max(50, min(base_volume, 50000))
@@ -267,8 +267,8 @@ class KeywordResearchService:
                         "Video Carousel", "List Snippet", "Image Pack", "Sitelinks"
                     ], k=1)
                 features = list(set(features))
-                keyword_difficulty = KeywordResearchService.calculate_keyword_difficulty(
-                    search_volume, k, features, intent, suggestion_count
+                keyword_difficulty = KeywordGenerationService.calculate_keyword_difficulty(
+                    search_volume, k, features, intent, suggestion_counts[i]
                 )
                 if intent == "Commercial":
                     cpc_usd = round(random.uniform(2, 10) + (search_volume / 10000) + (keyword_difficulty / 50), 2)
@@ -294,8 +294,6 @@ class KeywordResearchService:
                     "features": features
                 })
                 llm_metrics_list.append({"keyword": k, "llm": False})
-            time.sleep(0.2)
-
         keywords_out = [
             {
                 "keyword": m["keyword"],
@@ -308,7 +306,6 @@ class KeywordResearchService:
             }
             for m in metrics
         ]
-
         # Add ranking node: sort by composite score (search_volume / (1 + keyword_difficulty))
         ranked_keywords = sorted(
             keywords_out,
@@ -322,7 +319,6 @@ class KeywordResearchService:
             }
             for k in ranked_keywords
         ]
-
         metadata = {
             "query": seed,
             "country": country,
@@ -330,7 +326,7 @@ class KeywordResearchService:
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "total_results": len(keywords_out)
         }
-        print(f"[KeywordGen] Returning {len(keywords_out)} keywords with metadata: {metadata}")
+        logger.info(f"[KeywordGen] Returning {len(keywords_out)} keywords with metadata: {metadata}")
         return {
             "keywords": keywords_out,
             "metadata": metadata,
@@ -339,7 +335,10 @@ class KeywordResearchService:
         }
 
     @staticmethod
-    def fetch_google_suggestions(query: str, lang: str = 'en', country: str = 'us') -> list:
+    def fetch_google_suggestions(query: str, lang: str = 'en', country: str = 'us') -> List[str]:
+        """
+        Fetch Google autocomplete suggestions for a query.
+        """
         try:
             url = 'https://suggestqueries.google.com/complete/search'
             params = {
@@ -350,25 +349,28 @@ class KeywordResearchService:
             }
             response = requests.get(url, params=params, timeout=10)
             if response.status_code == 200:
-                        return response.json()[1]
-            print(f"[KeywordGen] Google suggestions failed for '{query}': {response.status_code}")
+                return response.json()[1]
+            logger.warning(f"[KeywordGen] Google suggestions failed for '{query}': {response.status_code}")
             return []
         except Exception as e:
-            print(f"[KeywordGen] Error fetching Google suggestions: {e}")
+            logger.warning(f"[KeywordGen] Error fetching Google suggestions: {e}")
             return []
 
     @staticmethod
-    def generate_long_tail_keywords(seed: str, lang: str = 'en', country: str = 'us') -> set:
+    def generate_long_tail_keywords(seed: str, lang: str = 'en', country: str = 'us') -> Set[str]:
+        """
+        Recursively expand Google suggestions to generate long-tail keywords.
+        """
         depth = 3
         seen = set()
         def _expand(keyword: str, current_depth: int):
             if current_depth > depth:
                 return
-            suggestions = KeywordResearchService.fetch_google_suggestions(keyword, lang, country)
+            suggestions = KeywordGenerationService.fetch_google_suggestions(keyword, lang, country)
             for suggestion in suggestions:
                 if suggestion not in seen:
                     seen.add(suggestion)
                     _expand(suggestion, current_depth + 1)
         _expand(seed, 1)
-        print(f"[KeywordGen] Long-tail keywords generated: {len(seen)}")
+        logger.info(f"[KeywordGen] Long-tail keywords generated: {len(seen)}")
         return seen 

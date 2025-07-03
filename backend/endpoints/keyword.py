@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import List, Optional
-from services.KeywordGenerationService import KeywordResearchService
+from services.KeywordGenerationService import KeywordGenerationService
 from services.long_tail_keyword_service import LongTailKeywordService
 from db.models.Schemas import AdvancedKeywordGenerationRequest, AdvancedKeywordGenerationResponse, AdvancedKeywordObject
 
@@ -60,7 +60,7 @@ def generate_keywords(request: KeywordGenerationRequest):
 
 @router.post("/generate-advanced", response_model=AdvancedKeywordGenerationResponse)
 def generate_advanced_keywords(request: AdvancedKeywordGenerationRequest):
-    result = KeywordResearchService.generate_advanced_keywords(
+    result = KeywordGenerationService.generate_advanced_keywords(
         seed=request.seed,
         lang=request.lang or 'en',
         country=request.country or 'us',

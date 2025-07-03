@@ -6,13 +6,13 @@ import { Home, Folder, Table, CreditCard, User, LogIn, UserPlus, KeyRound } from
 const navItems = [
   { label: 'Dashboard', icon: <Home size={20} />, path: '/' },
   { label: 'Projects', icon: <Folder size={20} />, path: '/projects' },
+  { label: 'Generate Keywords', icon: <KeyRound size={20} />, path: '/generate-keywords' },
   { label: 'Long Tail Keywords', icon: <KeyRound size={20} />, path: '/long-tail-keywords' },
   { label: 'Tables', icon: <Table size={20} />, path: '/' },
   { label: 'Billing', icon: <CreditCard size={20} />, path: '/' },
   { label: 'Profile', icon: <User size={20} />, path: '/' },
   { label: 'Sign In', icon: <LogIn size={20} />, path: '/login' },
   { label: 'Sign Up', icon: <UserPlus size={20} />, path: '/signup' },
-  { label: 'Generate Keywords', icon: <KeyRound size={20} />, path: '/generate-keywords' },
 ];
 
 const Sidebar: React.FC = () => {
@@ -85,7 +85,7 @@ const Sidebar: React.FC = () => {
         </div>
       )}
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 h-screen bg-dark-blue/80 border-r border-white/10 p-6 gap-4 overflow-y-auto custom-scrollbar">
+      <aside className="hidden md:flex flex-col w-[300px] h-screen bg-dark-blue/80 border-r border-white/10 p-6 gap-4 overflow-y-auto custom-scrollbar">
         <div className="mb-8 flex items-center gap-2">
           <span className="text-2xl font-bold text-white tracking-widest">SEO AGENT</span>
         </div>

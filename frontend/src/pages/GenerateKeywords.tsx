@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { KeyRound, Globe, Languages, Table2 } from 'lucide-react';
-import SeedForm from '../components/generate-keywords/SeedForm';
 import KeywordsTable from '../components/generate-keywords/KeywordsTable';
 import ErrorMessage from '../components/generate-keywords/ErrorMessage';
 import LoadingOverlay from '../components/generate-keywords/LoadingOverlay';
@@ -58,7 +57,7 @@ const GenerateKeywords: React.FC = () => {
         {/* Header */}
         <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
           <KeyRound size={32} className="text-accent-blue" />
-          Advanced Keyword Generator
+          Keyword Generator
         </h1>
         {/* Card Form */}
         <form
