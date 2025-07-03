@@ -2,6 +2,8 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import List, Optional
 from services.KeywordGenerationService import KeywordResearchService
+from services.long_tail_keyword_service import LongTailKeywordService
+from db.models.Schemas import AdvancedKeywordGenerationRequest, AdvancedKeywordGenerationResponse, AdvancedKeywordObject
 
 router = APIRouter(prefix="/keyword", tags=["keyword"])
 
@@ -47,11 +49,36 @@ def available_locations():
         {"id": 2112, "name": "Japan"},
     ]
 
-@router.post("/generate", response_model=KeywordGenerationResponse)
+@router.post("/generate-long-tail-keywords", response_model=KeywordGenerationResponse)
 def generate_keywords(request: KeywordGenerationRequest):
-    keywords = KeywordResearchService.generate_long_tail_keywords(
+    keywords = LongTailKeywordService.generate_long_tail_keywords(
         seed=request.seed,
         lang=request.lang or 'en',
         country=request.country or 'us'
     )
     return KeywordGenerationResponse(keywords=sorted(list(keywords))) 
+
+@router.post("/generate-advanced", response_model=AdvancedKeywordGenerationResponse)
+def generate_advanced_keywords(request: AdvancedKeywordGenerationRequest):
+    result = KeywordResearchService.generate_advanced_keywords(
+        seed=request.seed,
+        lang=request.lang or 'en',
+        country=request.country or 'us',
+        top_n=request.top_n or 20
+    )
+    keywords = result["keywords"]
+    metadata = result["metadata"]
+    # Ensure output is a list of AdvancedKeywordObject with all new fields and correct types
+    keyword_objs = [
+        AdvancedKeywordObject(
+            keyword=str(kw["keyword"]),
+            search_volume=int(kw["search_volume"]),
+            keyword_difficulty=int(kw["keyword_difficulty"]),
+            cpc_usd=float(kw["cpc_usd"]),
+            competitive_density=float(kw["competitive_density"]),
+            intent=str(kw["intent"]),
+            features=list(kw["features"]) if not isinstance(kw["features"], str) else [kw["features"]]
+        )
+        for kw in keywords
+    ]
+    return AdvancedKeywordGenerationResponse(keywords=keyword_objs, metadata=metadata) 

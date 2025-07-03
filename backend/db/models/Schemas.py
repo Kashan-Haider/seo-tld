@@ -151,3 +151,23 @@ class AuditReportResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+# Advanced Keyword Generation Schemas
+class AdvancedKeywordGenerationRequest(BaseModel):
+    seed: str
+    lang: Optional[str] = 'en'
+    country: Optional[str] = 'us'
+    top_n: Optional[int] = 20
+
+class AdvancedKeywordObject(BaseModel):
+    keyword: str
+    search_volume: int
+    keyword_difficulty: int
+    cpc_usd: float
+    competitive_density: float
+    intent: str
+    features: List[str]
+
+class AdvancedKeywordGenerationResponse(BaseModel):
+    keywords: List[AdvancedKeywordObject]
+    metadata: dict

@@ -12,6 +12,7 @@ const navItems = [
   { label: 'Profile', icon: <User size={20} />, path: '/' },
   { label: 'Sign In', icon: <LogIn size={20} />, path: '/login' },
   { label: 'Sign Up', icon: <UserPlus size={20} />, path: '/signup' },
+  { label: 'Generate Keywords', icon: <KeyRound size={20} />, path: '/generate-keywords' },
 ];
 
 const Sidebar: React.FC = () => {
