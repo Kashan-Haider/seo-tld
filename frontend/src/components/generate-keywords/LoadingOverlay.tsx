@@ -1,25 +1,23 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 
-const messages = [
+interface LoadingOverlayProps {
+  step: number;           // Current step (1-based)
+  totalSteps: number;     // Total number of steps
+  message: string;        // Current progress message
+}
+
+const stepMessages = [
   "Analyzing your keyword...",
   "Generating keywords using AI...",
-  "Enhancing and deduplicating keywords...",
-  "Clustering similar phrases...",
-  "Fetching real-time search suggestions...",
   "Estimating search volume and difficulty...",
-  "Scoring and ranking keywords...",
+  "Filtering and prioritizing keywords...",
+  "Clustering and deduplicating...",
   "Finalizing your advanced keyword list..."
 ];
 
-const LoadingOverlay: React.FC = () => {
-  const [msgIdx, setMsgIdx] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setMsgIdx((idx) => (idx + 1) % messages.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
+const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ step, totalSteps, message }) => {
+  // Calculate progress as a percentage
+  const percent = Math.round((step - 1) / totalSteps * 100);
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col text-center items-center justify-center bg-dark-blue/95 backdrop-blur-lg px-5">
@@ -30,11 +28,19 @@ const LoadingOverlay: React.FC = () => {
           <circle cx="40" cy="40" r="20" stroke="#22d3ee" strokeWidth="4" strokeDasharray="32 32" strokeLinecap="round" />
         </svg>
         <div className="mt-6 text-2xl font-bold text-white tracking-wide animate-pulse">
-          {messages[msgIdx]}
+          {message || stepMessages[step - 1] || "Working..."}
         </div>
         <div className="mt-2 text-white text-base animate-fade-in">
-          Please wait while we generate your keywords. It may take a few minutes.
+          Step {step} of {totalSteps}
         </div>
+        {/* Progress Bar */}
+        <div className="w-64 mt-6 h-4 bg-white/10 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-accent-blue via-light-purple to-accent-blue transition-all duration-500"
+            style={{ width: `${percent}%` }}
+          />
+        </div>
+        <div className="mt-2 text-white/70 text-xs">{percent}% complete</div>
       </div>
       <div className="flex gap-2 mt-4">
         <span className="w-3 h-3 bg-accent-blue rounded-full animate-bounce" style={{ animationDelay: '0s' }}></span>

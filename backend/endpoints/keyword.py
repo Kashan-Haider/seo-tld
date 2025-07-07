@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from sse_starlette.sse import EventSourceResponse
 from pydantic import BaseModel
 from typing import List, Optional
 from services.KeywordGenerationService import KeywordGenerationService
@@ -90,6 +91,13 @@ def generate_advanced_keywords(request: AdvancedKeywordGenerationRequest):
         for kw in keywords
     ]
     return AdvancedKeywordGenerationResponse(keywords=keyword_objs, metadata=metadata)
+
+@router.get("/generate-advanced-stream")
+async def generate_keywords_stream(seed: str, lang: str = 'en', country: str = 'us', top_n: int = 10):
+    def event_generator():
+        for event in KeywordGenerationService.generate_advanced_keywords_stream(seed, lang, country, top_n):
+            yield f"data: {event}\n\n"
+    return EventSourceResponse(event_generator())
 
 @router.post("/save", response_model=KeywordResponse)
 def save_keyword(request: SaveKeywordRequest, db=Depends(get_db)):

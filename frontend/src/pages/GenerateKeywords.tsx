@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { KeyRound, Globe, Languages, Table2 } from 'lucide-react';
 import KeywordBox from '../components/generate-keywords/KeywordBox';
 import ErrorMessage from '../components/generate-keywords/ErrorMessage';
@@ -28,6 +28,8 @@ const defaultLang = 'en';
 const defaultCountry = 'us';
 const defaultTopN = 10;
 
+const totalSteps = 6; // Update if your backend has more/less steps
+
 const GenerateKeywords: React.FC = () => {
   const [seed, setSeed] = useState('');
   const [lang, setLang] = useState(defaultLang);
@@ -38,24 +40,51 @@ const GenerateKeywords: React.FC = () => {
   const { selectedProject } = useProjectStore();
   const projectId = selectedProject?.id;
   const [error, setError] = useState<string | null>(null);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [progressMsg, setProgressMsg] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     setKeywords([]);
+    setCurrentStep(1);
+    setProgressMsg("");
     try {
-      const response = await fetch('/api/keyword/generate-advanced', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ seed, lang, country, top_n: defaultTopN })
-      });
-      if (!response.ok) throw new Error('Failed to generate keywords');
-      const data = await response.json();
-      setKeywords(data.keywords || []);
+      // Use SSE instead of fetch
+      const url = `/api/keyword/generate-advanced-stream?seed=${encodeURIComponent(seed)}&lang=${lang}&country=${country}&top_n=${defaultTopN}`;
+      const es = new EventSource(url);
+
+      es.onmessage = (event) => {
+        // Remove 'data: ' prefix if present (SSE protocol)
+        let jsonStr = event.data;
+        if (jsonStr.startsWith('data: ')) {
+          jsonStr = jsonStr.slice(6);
+        }
+        // Some servers may send multiple lines, join them
+        jsonStr = jsonStr.split('\n').filter(Boolean).join('');
+        const data = JSON.parse(jsonStr);
+        if (data.event === "progress") {
+          setCurrentStep(data.step || 1);
+          setProgressMsg(data.message || "");
+        } else if (data.event === "complete") {
+          setKeywords(data.keywords || []);
+          setLoading(false);
+          es.close();
+        } else if (data.event === "error") {
+          setError(data.message || "Unknown error");
+          setLoading(false);
+          es.close();
+        }
+      };
+
+      es.onerror = () => {
+        setError("Connection lost or server error.");
+        setLoading(false);
+        es.close();
+      };
     } catch (err: any) {
       setError(err.message || 'Unknown error');
-    } finally {
       setLoading(false);
     }
   };
@@ -175,7 +204,13 @@ const GenerateKeywords: React.FC = () => {
           </button>
           {error && <div className="text-red-400 text-sm mt-2">{error}</div>}
         </form>
-        {loading && <LoadingOverlay />}
+        {loading && (
+          <LoadingOverlay
+            step={currentStep}
+            totalSteps={totalSteps}
+            message={progressMsg}
+          />
+        )}
         {error && <ErrorMessage error={error} />}
         {keywords.length > 0 && (
           <div className="mt-8">

@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useProjectStore } from '../store/projectStore';
-import KeywordBox from '../components/generate-keywords/KeywordBox';
 import { ArrowLeft, BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import SavedKeywordBox from '../components/generate-keywords/SavedKeywordBox ';
 
 interface KeywordSimpleObject {
   id: string;
@@ -12,6 +12,32 @@ interface KeywordSimpleObject {
   competitive_density: string;
   intent: string;
   project_id?: string;
+}
+
+// Helper to convert keywords to CSV
+function keywordsToCSV(keywords: KeywordSimpleObject[]): string {
+  const header = ['Keyword', 'Search Volume', 'Difficulty', 'Competition', 'Intent'];
+  const rows = keywords.map(kw => [
+    kw.keyword,
+    kw.search_volume,
+    kw.keyword_difficulty,
+    kw.competitive_density,
+    kw.intent
+  ]);
+  return [header, ...rows].map(row => row.map(field => `"${(field || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+}
+
+function downloadCSV(keywords: KeywordSimpleObject[]) {
+  const csv = keywordsToCSV(keywords);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', 'saved_keywords.csv');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 const SavedKeywords: React.FC = () => {
@@ -80,9 +106,9 @@ const SavedKeywords: React.FC = () => {
 
   return (
     <div className="w-full min-h-screen bg-dark-blue flex flex-col items-center py-10 px-4 md:px-20 lg:px-40">
-      <div className="w-full max-w-5xl mx-auto flex flex-col gap-6">
+      <div className="w-full mx-auto flex flex-col gap-6">
         <div className="flex items-center gap-3 mb-2">
-          <Link to="/generate-keywords" className="text-accent-blue hover:underline flex items-center gap-1">
+          <Link to="/generate-keywords" className="text-accent-blue hover:underline flex items-center">
             <ArrowLeft size={20} /> Back
           </Link>
           <BookOpen size={28} className="text-green-400" />
@@ -102,6 +128,13 @@ const SavedKeywords: React.FC = () => {
               onChange={e => setSearch(e.target.value)}
               disabled={loading}
             />
+            <button
+              className="mt-2 md:mt-0 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold shadow-lg border border-green-400/30 transition-all duration-200"
+              onClick={() => downloadCSV(filtered)}
+              disabled={filtered.length === 0}
+            >
+              Download CSV
+            </button>
           </div>
           {loading ? (
             <div className="text-white/70 text-center py-10">Loading saved keywords...</div>
@@ -112,13 +145,13 @@ const SavedKeywords: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filtered.map(kw => (
-                <KeywordBox
+                <SavedKeywordBox
                   key={kw.id}
                   kw={kw}
                   isSaved={true}
                   onSaveChange={(_id, saved) => {
-                    // Only open the dialog, do not update UI yet
-                    if (!saved && confirmUnsaveId !== kw.id) setConfirmUnsaveId(kw.id);
+                    // Only open the dialog for unsave, do nothing for save
+                    if (!saved) setConfirmUnsaveId(kw.id);
                   }}
                   projectId={projectId}
                 />
