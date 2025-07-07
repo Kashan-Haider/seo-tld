@@ -1,63 +1,62 @@
 import React, { useState } from 'react';
-import { KeyRound, Globe, Languages, Loader2 } from 'lucide-react';
+import { KeyRound, Globe, Languages } from 'lucide-react';
+import ErrorMessage from '../components/generate-keywords/ErrorMessage';
+import LoadingOverlay from '../components/generate-keywords/LoadingOverlay';
 
-const LANGUAGE_OPTIONS = [
-  { code: 'en', label: 'English' },
-  { code: 'fr', label: 'French' },
-  { code: 'es', label: 'Spanish' },
-  { code: 'de', label: 'German' },
-  { code: 'it', label: 'Italian' },
-  { code: 'pt', label: 'Portuguese' },
-  { code: 'ru', label: 'Russian' },
-  { code: 'ja', label: 'Japanese' },
-  { code: 'zh', label: 'Chinese' },
-  { code: 'ar', label: 'Arabic' },
-  { code: 'hi', label: 'Hindi' },
-  { code: 'tr', label: 'Turkish' },
-  { code: 'ko', label: 'Korean' },
-  { code: 'nl', label: 'Dutch' },
-  { code: 'sv', label: 'Swedish' },
-  // Add more as needed
-];
+const defaultLang = 'en';
+const defaultCountry = 'us';
 
-const COUNTRY_OPTIONS = [
-  { code: 'us', label: 'United States' },
-  { code: 'gb', label: 'United Kingdom' },
-  { code: 'fr', label: 'France' },
-  { code: 'de', label: 'Germany' },
-  { code: 'es', label: 'Spain' },
-  { code: 'it', label: 'Italy' },
-  { code: 'br', label: 'Brazil' },
-  { code: 'in', label: 'India' },
-  { code: 'jp', label: 'Japan' },
-  { code: 'cn', label: 'China' },
-  { code: 'ru', label: 'Russia' },
-  { code: 'tr', label: 'Turkey' },
-  { code: 'ca', label: 'Canada' },
-  { code: 'au', label: 'Australia' },
-  { code: 'mx', label: 'Mexico' },
-  { code: 'kr', label: 'South Korea' },
-  { code: 'nl', label: 'Netherlands' },
-  { code: 'se', label: 'Sweden' },
-  // Add more as needed
-];
+// KeywordBox component for displaying each keyword as a card/chip
+const KeywordBox: React.FC<{ keyword: string }> = ({ keyword }) => {
+  const [copied, setCopied] = useState(false);
 
-const KeywordBox: React.FC<{ keyword: string }> = ({ keyword }) => (
-  <div className="bg-gradient-to-br from-dark-blue via-medium-blue to-dark-blue rounded-xl shadow border border-white/10 px-4 py-2 text-white text-base font-semibold flex items-center gap-2 hover:bg-accent-blue/10 transition cursor-pointer select-text">
-    <KeyRound size={18} className="text-accent-blue" />
-    <span>{keyword}</span>
-  </div>
-);
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(keyword);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1200);
+  };
+
+  return (
+    <div
+      className="relative group bg-gradient-to-br from-blue-900 via-indigo-700 to-blue-700 rounded-xl shadow border border-white/10 px-5 py-3 flex items-center justify-between gap-3 cursor-pointer select-text transition-all duration-300 hover:scale-102 hover:shadow-lg hover:from-blue-800 hover:to-indigo-700"
+      style={{ minHeight: 56 }}
+    >
+      <div className="flex items-center gap-2">
+        <KeyRound size={20} className="text-accent-blue drop-shadow" />
+        <span className="text-base font-semibold text-white tracking-wide drop-shadow-sm">
+          {keyword}
+        </span>
+      </div>
+      <button
+        onClick={e => { e.stopPropagation(); handleCopy(); }}
+        className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white"
+        title={copied ? 'Copied!' : 'Copy keyword'}
+        aria-label="Copy keyword"
+        type="button"
+      >
+        {copied ? (
+          <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><path d="M5 10l4 4 6-6" stroke="#22d3ee" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        ) : (
+          <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><rect x="5" y="7" width="10" height="10" rx="2" stroke="white" strokeWidth="1.5"/><rect x="7.5" y="3" width="7.5" height="7.5" rx="2" stroke="white" strokeWidth="1.5"/></svg>
+        )}
+      </button>
+      {/* Tooltip */}
+      <span className={`absolute right-3 -top-7 text-xs px-2 py-1 rounded bg-black/80 text-white pointer-events-none transition-opacity duration-200 ${copied ? 'opacity-100' : 'opacity-0 group-hover:opacity-80'}`}>
+        {copied ? 'Copied!' : 'Copy'}
+      </span>
+    </div>
+  );
+};
 
 const LongTailKeywords: React.FC = () => {
   const [seed, setSeed] = useState('');
-  const [lang, setLang] = useState('en');
-  const [country, setCountry] = useState('us');
-  const [keywords, setKeywords] = useState<string[]>([]);
+  // Remove lang and country state
   const [loading, setLoading] = useState(false);
+  const [keywords, setKeywords] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const handleGenerate = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
     setError(null);
     setKeywords([]);
@@ -65,7 +64,7 @@ const LongTailKeywords: React.FC = () => {
       const res = await fetch('/api/keyword/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ seed, lang, country }),
+        body: JSON.stringify({ seed }), // Only send seed
       });
       if (!res.ok) throw new Error('Failed to generate keywords');
       const data = await res.json();
@@ -78,13 +77,18 @@ const LongTailKeywords: React.FC = () => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-dark-blue flex flex-col items-center py-10 px-4">
-      <div className="w-full max-w-2xl mx-auto flex flex-col gap-6">
+    <div className="w-full min-h-screen bg-dark-blue flex flex-col items-center py-10 px-4 md:px-20 lg:px-40">
+      <div className="w-full mx-auto flex flex-col gap-6">
+        {/* Header */}
         <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
           <KeyRound size={32} className="text-accent-blue" />
           Long Tail Keyword Generator
         </h1>
-        <div className="bg-gradient-to-br from-dark-blue via-medium-blue to-dark-blue rounded-2xl shadow-xl border border-white/10 p-6 flex flex-col gap-4">
+        {/* Card Form */}
+        <form
+          onSubmit={handleSubmit}
+          className="bg-gradient-to-br from-dark-blue via-medium-blue to-dark-blue rounded-2xl shadow-xl border border-white/10 p-6 flex flex-col gap-4"
+        >
           <label className="text-white/80 font-semibold text-lg flex items-center gap-2">
             <KeyRound size={20} className="text-accent-blue" />
             Seed Keyword
@@ -94,51 +98,21 @@ const LongTailKeywords: React.FC = () => {
             placeholder="Enter a seed keyword..."
             value={seed}
             onChange={e => setSeed(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') handleGenerate(); }}
+            onKeyDown={e => { if (e.key === 'Enter') handleSubmit(e as any); }}
             disabled={loading}
           />
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="text-white/60 text-sm flex items-center gap-1">
-                <Languages size={16} className="text-light-purple" /> Language
-              </label>
-              <select
-                className="w-full px-3 py-2 rounded-lg bg-medium-blue/60 text-white border border-white/10 focus:outline-none focus:border-accent-blue text-base"
-                value={lang}
-                onChange={e => setLang(e.target.value)}
-                disabled={loading}
-              >
-                {LANGUAGE_OPTIONS.map(opt => (
-                  <option key={opt.code} value={opt.code}>{opt.label} ({opt.code})</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex-1">
-              <label className="text-white/60 text-sm flex items-center gap-1">
-                <Globe size={16} className="text-accent-blue" /> Country
-              </label>
-              <select
-                className="w-full px-3 py-2 rounded-lg bg-medium-blue/60 text-white border border-white/10 focus:outline-none focus:border-accent-blue text-base"
-                value={country}
-                onChange={e => setCountry(e.target.value)}
-                disabled={loading}
-              >
-                {COUNTRY_OPTIONS.map(opt => (
-                  <option key={opt.code} value={opt.code}>{opt.label} ({opt.code})</option>
-                ))}
-              </select>
-            </div>
-          </div>
           <button
+            type="submit"
             className="mt-2 w-full h-12 px-6 rounded-xl bg-gradient-to-r from-accent-blue via-light-purple to-accent-blue text-white font-bold shadow-lg hover:shadow-accent-blue/30 hover:scale-[1.02] transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100 flex items-center justify-center gap-3"
-            onClick={handleGenerate}
             disabled={loading || !seed.trim()}
           >
-            {loading ? <Loader2 className="animate-spin" size={22} /> : <KeyRound size={22} />}
+            <KeyRound size={22} />
             {loading ? 'Generating...' : 'Generate Keywords'}
           </button>
           {error && <div className="text-red-400 text-sm mt-2">{error}</div>}
-        </div>
+        </form>
+        {loading && <LoadingOverlay />}
+        {error && <ErrorMessage error={error} />}
         {keywords.length > 0 && (
           <div className="mt-8">
             <h2 className="text-xl font-bold text-white mb-4">Generated Keywords</h2>

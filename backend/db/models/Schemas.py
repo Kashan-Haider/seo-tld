@@ -41,23 +41,18 @@ class ProjectResponse(ProjectBase):
 
 # Keyword Schemas
 class KeywordBase(BaseModel):
+    id: Optional[str] = None
     keyword: str
-    search_volume: Optional[int] = None
-    difficulty: Optional[float] = None
-    cpc: Optional[float] = None
-    target_position: Optional[int] = None
+    search_volume: Optional[str] = None
+    keyword_difficulty: Optional[str] = None
+    competitive_density: Optional[str] = None
+    intent: Optional[str] = None
+    project_id: Optional[str] = None
 
 class KeywordCreate(KeywordBase):
-    project_id: int
+    pass
 
 class KeywordResponse(KeywordBase):
-    id: int
-    project_id: int
-    current_position: Optional[int] = None
-    url_ranking: Optional[str] = None
-    is_tracking: bool
-    created_at: datetime
-    
     class Config:
         from_attributes = True
 
@@ -159,15 +154,13 @@ class AdvancedKeywordGenerationRequest(BaseModel):
     country: Optional[str] = 'us'
     top_n: Optional[int] = 20
 
-class AdvancedKeywordObject(BaseModel):
+class KeywordSimpleObject(BaseModel):
     keyword: str
-    search_volume: int
-    keyword_difficulty: int
-    cpc_usd: float
-    competitive_density: float
+    search_volume: str
+    keyword_difficulty: str
+    competitive_density: str
     intent: str
-    features: List[str]
 
 class AdvancedKeywordGenerationResponse(BaseModel):
-    keywords: List[AdvancedKeywordObject]
+    keywords: List[KeywordSimpleObject]
     metadata: dict

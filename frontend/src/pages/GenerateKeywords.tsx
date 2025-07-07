@@ -1,28 +1,42 @@
 import React, { useEffect, useState } from 'react';
 import { KeyRound, Globe, Languages, Table2 } from 'lucide-react';
-import KeywordsTable from '../components/generate-keywords/KeywordsTable';
+import KeywordBox from '../components/generate-keywords/KeywordBox';
 import ErrorMessage from '../components/generate-keywords/ErrorMessage';
 import LoadingOverlay from '../components/generate-keywords/LoadingOverlay';
+import { useProjectStore } from '../store/projectStore';
+import { Link } from 'react-router-dom';
+
+interface KeywordSimpleObject {
+  id: string;
+  keyword: string;
+  search_volume: string;
+  keyword_difficulty: string;
+  competitive_density: string;
+  intent: string;
+  project_id?: string;
+}
 
 const attributeExplanations = [
   { name: "Keyword", desc: "The suggested search phrase related to your seed." },
-  { name: "Search Volume", desc: "Estimated monthly searches for this keyword." },
-  { name: "Difficulty", desc: "How hard it is to rank for this keyword (1-100, higher is harder)." },
-  { name: "CPC (USD)", desc: "Estimated cost-per-click for paid ads in USD." },
-  { name: "Competition", desc: "How competitive the keyword is for advertisers (0-1, higher is more competitive)." },
-  { name: "Intent", desc: "The likely search intent: Commercial, Informational, or Navigational." },
-  { name: "Features", desc: "Special SERP features that may appear for this keyword (e.g., Featured Snippet, People Also Ask)." }
+  { name: "Search Volume", desc: "Estimated monthly searches for this keyword (very high, high, medium, low, very low)." },
+  { name: "Difficulty", desc: "How hard it is to rank for this keyword (extreme, very high, high, medium, low, very low)." },
+  { name: "Competition", desc: "How competitive the keyword is for advertisers (very high, high, medium, low, very low)." },
+  { name: "Intent", desc: "The likely search intent: Commercial, Informational, or Navigational." }
 ];
 
 const defaultLang = 'en';
 const defaultCountry = 'us';
+const defaultTopN = 10;
 
 const GenerateKeywords: React.FC = () => {
   const [seed, setSeed] = useState('');
   const [lang, setLang] = useState(defaultLang);
   const [country, setCountry] = useState(defaultCountry);
   const [loading, setLoading] = useState(false);
-  const [keywords, setKeywords] = useState<any[]>([]);
+  const [keywords, setKeywords] = useState<KeywordSimpleObject[]>([]);
+  const [saved, setSaved] = useState<Record<string, boolean>>({});
+  const { selectedProject } = useProjectStore();
+  const projectId = selectedProject?.id;
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -34,7 +48,7 @@ const GenerateKeywords: React.FC = () => {
       const response = await fetch('/api/keyword/generate-advanced', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ seed, lang, country })
+        body: JSON.stringify({ seed, lang, country, top_n: defaultTopN })
       });
       if (!response.ok) throw new Error('Failed to generate keywords');
       const data = await response.json();
@@ -46,14 +60,30 @@ const GenerateKeywords: React.FC = () => {
     }
   };
 
+  const handleSaveChange = (id: string, isNowSaved: boolean) => {
+    setSaved(prev => ({ ...prev, [id]: isNowSaved }));
+  };
 
-  useEffect(()=>{
- console.log(loading)
-  }, [])
+  if (!projectId) {
+    return (
+      <div className="w-full min-h-screen bg-dark-blue flex flex-col items-center justify-center">
+        <div className="text-white text-lg">Please select or create a project to generate and save keywords.</div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full min-h-screen bg-dark-blue flex flex-col items-center py-10 px-4 md:px-20 lg:px-40">
       <div className="w-full mx-auto flex flex-col gap-6">
+        {/* Link to Saved Keywords page */}
+        <div className="flex justify-end mb-2">
+          <Link
+            to="/saved-keywords"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold shadow-lg transition-all duration-200 border border-green-400/30"
+          >
+            <span>View Saved Keywords</span>
+          </Link>
+        </div>
         {/* Header */}
         <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
           <KeyRound size={32} className="text-accent-blue" />
@@ -87,7 +117,6 @@ const GenerateKeywords: React.FC = () => {
                 onChange={e => setLang(e.target.value)}
                 disabled={loading}
               >
-                {/* Add language options here or import from a constant */}
                 <option value="en">English (en)</option>
                 <option value="fr">French (fr)</option>
                 <option value="es">Spanish (es)</option>
@@ -115,7 +144,6 @@ const GenerateKeywords: React.FC = () => {
                 onChange={e => setCountry(e.target.value)}
                 disabled={loading}
               >
-                {/* Add country options here or import from a constant */}
                 <option value="us">United States (us)</option>
                 <option value="gb">United Kingdom (gb)</option>
                 <option value="fr">France (fr)</option>
@@ -155,10 +183,18 @@ const GenerateKeywords: React.FC = () => {
               <Table2 size={22} className="text-accent-blue" />
               <h2 className="text-xl font-bold text-white">Generated Keywords</h2>
             </div>
-            <div className="bg-gradient-to-br from-dark-blue via-medium-blue to-dark-blue rounded-2xl shadow-xl border border-white/10 p-4">
-              <KeywordsTable keywords={keywords} />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {keywords.map((kw, i) => (
+                <KeywordBox
+                  key={kw.keyword + i}
+                  kw={{ ...kw, id: kw.keyword }}
+                  isSaved={!!saved[kw.keyword]}
+                  onSaveChange={handleSaveChange}
+                  projectId={projectId}
+                />
+              ))}
             </div>
-            {/* Table attribute explanations */}
+            {/* Attribute explanations */}
             <div className="mt-8 bg-dark-blue/80 rounded-2xl p-6 border border-white/10 shadow-lg">
               <h2 className="text-lg font-bold mb-4 text-accent-blue">What do these columns mean?</h2>
               <ul className="space-y-2 text-white/90">

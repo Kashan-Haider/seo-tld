@@ -139,7 +139,7 @@ const AuditReportCard: React.FC<AuditReportCardProps> = ({
           <div className="mt-3">
             <button
               onClick={handleOpportunitiesClick}
-              className="text-xs text-light-purple hover:text-light-purple/80 mb-1 flex items-center gap-1 transition-colors cursor-pointer"
+              className="text-lg text-light-purple hover:text-light-purple/80 mb-1 flex items-center gap-1 transition-colors cursor-pointer"
             >
               Top Opportunities
               <ExternalLink className="w-3 h-3" />
@@ -153,7 +153,7 @@ const AuditReportCard: React.FC<AuditReportCardProps> = ({
           <div className="mt-2">
             <button
               onClick={handleDiagnosticsClick}
-              className="text-xs text-light-purple hover:text-light-purple/80 mb-1 flex items-center gap-1 transition-colors cursor-pointer"
+              className="text-lg text-light-purple hover:text-light-purple/80 mb-1 flex items-center gap-1 transition-colors cursor-pointer"
             >
               Diagnostics
               <ExternalLink className="w-3 h-3" />

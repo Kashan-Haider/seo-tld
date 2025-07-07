@@ -1,7 +1,6 @@
 from .user import User
 from .project import Project
 from .keyword import Keyword
-from .keywordRanking import KeywordRanking
 from .auditReport import AuditReport
 from .competitorAnalysis import CompetitorAnalysis
 from .auditResult import AuditResult

@@ -4,6 +4,9 @@ from typing import Set
 class LongTailKeywordService:
     @staticmethod
     def fetch_google_suggestions(query: str, lang: str = 'en', country: str = 'us') -> list:
+        # Always use 'en' and 'us' regardless of input
+        lang = 'en'
+        country = 'us'
         try:
             url = 'https://suggestqueries.google.com/complete/search'
             params = {
@@ -28,7 +31,7 @@ class LongTailKeywordService:
         def _expand(keyword: str, current_depth: int):
             if current_depth > depth:
                 return
-            suggestions = LongTailKeywordService.fetch_google_suggestions(keyword, lang, country)
+            suggestions = LongTailKeywordService.fetch_google_suggestions(keyword)
             for suggestion in suggestions:
                 if suggestion not in seen:
                     seen.add(suggestion)
