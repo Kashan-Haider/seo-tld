@@ -1,3 +1,5 @@
+// AuditLoadingScreen.tsx
+// 3D animated loading screen for audit loading states
 import React from 'react';
 
 interface AuditLoadingScreenProps {
@@ -37,30 +39,6 @@ const AuditLoadingScreen: React.FC<AuditLoadingScreenProps> = ({ message, progre
           </div>
           <div className="absolute left-12 bottom-2 animate-float-cube3">
             <div className="w-5 h-5 bg-gradient-to-br from-neon-cyan to-accent-blue shadow rounded-lg transform rotate-6 blur-[0.5px] border-2 border-white/10" />
-          </div>
-        </div>
-        {/* Progress Bar with 3D effect (no neon) */}
-        <div className="w-96 max-w-xs md:max-w-md flex flex-col items-center">
-          <div className="w-full h-7 bg-gradient-to-r from-dark-blue via-medium-blue to-dark-blue rounded-full shadow-lg border-2 border-accent-blue/20 relative overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-accent-blue via-light-purple to-neon-cyan rounded-full shadow"
-              style={{ width: `${progress}%`, transition: 'width 0.6s cubic-bezier(0.4,0,0.2,1)' }}
-            />
-            {/* 3D highlight */}
-            <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-              <svg width="100%" height="100%">
-                <defs>
-                  <linearGradient id="barHighlight" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#fff" stopOpacity="0.10" />
-                    <stop offset="100%" stopColor="#fff" stopOpacity="0.01" />
-                  </linearGradient>
-                </defs>
-                <rect x="0" y="0" width="100%" height="100%" fill="url(#barHighlight)" />
-              </svg>
-            </div>
-          </div>
-          <div className="mt-2 text-accent-blue font-bold text-lg tracking-widest animate-pulse-fade">
-            {progress}%
           </div>
         </div>
         <div className="text-2xl md:text-3xl font-extrabold text-white animate-pulse-fade mt-2">

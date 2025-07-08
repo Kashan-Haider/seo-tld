@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { KeyRound, Globe, Languages } from 'lucide-react';
 import ErrorMessage from '../components/generate-keywords/ErrorMessage';
-import LoadingOverlay from '../components/generate-keywords/LoadingOverlay';
+import LoadingOverlay from '../components/generate-keywords/KeywordLoadingScreen';
 
 const defaultLang = 'en';
 const defaultCountry = 'us';

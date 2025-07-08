@@ -8,7 +8,7 @@ const Navbar: React.FC = () => {
   const { logout, user } = useAuth();
 
   return (
-    <nav className="w-full bg-gradient-to-r from-dark-blue/95 via-dark-blue/90 to-dark-blue/95 border-b border-white/10 sticky top-0 z-40 backdrop-blur-sm">
+    <nav className="w-full bg-gradient-to-r from-[#031c5d] via-dark-blue to-[#031c5d] sticky top-0 z-40 backdrop-blur-sm">
       <div className="flex items-center justify-between px-4 lg:px-6 py-3">
         {/* Left side - Logo and Menu Toggle */}
         <div className="flex items-center gap-4">

@@ -1,6 +1,6 @@
 import React from "react";
 
-interface LoadingOverlayProps {
+interface KeywordLoadingScreenProps {
   step: number;           // Current step (1-based)
   totalSteps: number;     // Total number of steps
   message: string;        // Current progress message
@@ -15,7 +15,7 @@ const stepMessages = [
   "Finalizing your advanced keyword list..."
 ];
 
-const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ step, totalSteps, message }) => {
+const KeywordLoadingScreen: React.FC<KeywordLoadingScreenProps> = ({ step, totalSteps, message }) => {
   // Calculate progress as a percentage
   const percent = Math.round((step - 1) / totalSteps * 100);
 
@@ -140,4 +140,4 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ step, totalSteps, messa
   );
 };
 
-export default LoadingOverlay; 
+export default KeywordLoadingScreen; 

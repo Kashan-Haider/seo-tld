@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { KeyRound, Globe, Languages, Table2 } from 'lucide-react';
 import KeywordBox from '../components/generate-keywords/KeywordBox';
 import ErrorMessage from '../components/generate-keywords/ErrorMessage';
-import LoadingOverlay from '../components/generate-keywords/LoadingOverlay';
+import LoadingOverlay from '../components/generate-keywords/KeywordLoadingScreen';
 import { useProjectStore } from '../store/projectStore';
 import { Link } from 'react-router-dom';
 

@@ -9,6 +9,7 @@ import PerformanceHistory from '../components/audit/PerformanceHistory';
 import NoAudits from './NoAudits';
 import { useNavigate } from 'react-router-dom';
 import DashboardLoadingScreen from '../components/DashboardLoadingScreen';
+import AuditLoadingScreen from '../components/AuditLoadingScreen';
 
 const Dashboard: React.FC = () => {
   const [latestAudit, setLatestAudit] = useState<any>(null);
@@ -24,6 +25,7 @@ const Dashboard: React.FC = () => {
   const [auditTaskProgress, setAuditTaskProgress] = useState<number>(0);
   const [auditTaskError, setAuditTaskError] = useState<string | null>(null);
   const [isPollingAudit, setIsPollingAudit] = useState(false);
+  const [auditsLoading, setAuditsLoading] = useState(false);
   
   const { user } = useAuth();
   const { setProjects, selectedProject, projects, setSelectedProject } = useProjectStore();
@@ -57,6 +59,7 @@ const Dashboard: React.FC = () => {
   // Fetch audits for the selected project
   const fetchAudits = useCallback(async (projectId: string) => {
     try {
+      setAuditsLoading(true);
       const token = localStorage.getItem('access_token');
       const res = await fetch(`/api/audit/get-all-audits/${projectId}`, {
         headers: {
@@ -78,6 +81,8 @@ const Dashboard: React.FC = () => {
       setAllAudits([]);
       setLatestAudit(null);
       setSelectedAudit(null);
+    } finally {
+      setAuditsLoading(false);
     }
   }, []);
 
@@ -241,6 +246,10 @@ const Dashboard: React.FC = () => {
 
   if (projectsLoading) {
     return <DashboardLoadingScreen message="Loading projects..." progress={0} />;
+  }
+
+  if (auditsLoading) {
+    return <AuditLoadingScreen message="Loading audits..." progress={0} />;
   }
 
   return (
