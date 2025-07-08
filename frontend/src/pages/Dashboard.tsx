@@ -14,7 +14,6 @@ import AuditLoadingScreen from '../components/AuditLoadingScreen';
 const Dashboard: React.FC = () => {
   const [latestAudit, setLatestAudit] = useState<any>(null);
   const [allAudits, setAllAudits] = useState<any[]>([]);
-  const [search, setSearch] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [projectsLoading, setProjectsLoading] = useState(true);
   const [isGeneratingAudit, setIsGeneratingAudit] = useState(false);
@@ -255,8 +254,6 @@ const Dashboard: React.FC = () => {
   return (
     <div className="w-full bg-dark-blue">
       <DashboardHeader
-        search={search}
-        setSearch={setSearch}
         dropdownOpen={dropdownOpen}
         setDropdownOpen={setDropdownOpen}
         projects={projects}
