@@ -2,8 +2,6 @@ import React from 'react';
 import { Search, Grid3X3, Calendar, Globe } from 'lucide-react';
 
 interface DashboardHeaderProps {
-  search: string;
-  setSearch: (search: string) => void;
   dropdownOpen: boolean;
   setDropdownOpen: (open: boolean) => void;
   projects: any[];
@@ -19,8 +17,6 @@ interface DashboardHeaderProps {
 }
 
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({
-  search,
-  setSearch,
   dropdownOpen,
   setDropdownOpen,
   projects,
@@ -37,18 +33,24 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   return (
     <header className="w-full bg-gradient-to-br from-dark-blue/95 via-dark-blue/90 to-dark-blue/95  sticky top-0 z-30 backdrop-blur-sm">
       <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 px-4 lg:px-6 py-4">
-        {/* Search and Project Selection */}
+        {/* Project Selection Dropdown */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 lg:gap-4 w-full lg:w-1/2">
           <div className="relative w-full">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-light-gray z-10" />
-            <input
-              className="w-full pl-10 pr-4 py-3 rounded-xl bg-gradient-to-r from-medium-blue/80 to-medium-blue text-white border border-white/10 focus:outline-none focus:border-accent-blue focus:ring-2 focus:ring-accent-blue/20 transition-all duration-300 text-base backdrop-blur-sm"
-              placeholder="Search projects..."
-              value={search || (selectedProject ? selectedProject.name : '')}
-              onChange={e => setSearch(e.target.value)}
-              onFocus={() => setDropdownOpen(true)}
-              onBlur={() => setTimeout(() => setDropdownOpen(false), 150)}
-            />
+            <button
+              className="w-full pl-4 pr-8 py-3 rounded-xl bg-gradient-to-r from-medium-blue/80 to-medium-blue text-white border border-white/10 hover:outline-none hover:border-accent-blue hover:ring-2 hover:ring-accent-blue/20 transition-all duration-300 text-base backdrop-blur-sm flex items-center justify-between"
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+            >
+              <div className="flex flex-col text-left">
+                <span className="font-semibold text-white text-base">{selectedProject ? selectedProject.name : 'Select Project'}</span>
+                <span className="text-xs text-white/50 flex items-center gap-1">
+                  <Globe size={12} />
+                  {selectedProject ? selectedProject.website_url : ''}
+                </span>
+              </div>
+              <span className="ml-2 text-light-gray">
+                <Grid3X3 size={18} />
+              </span>
+            </button>
             {dropdownOpen && (
               <div className="absolute left-0 right-0 mt-2 bg-gradient-to-br from-dark-blue to-medium-blue border border-white/10 rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto backdrop-blur-md custom-scrollbar">
                 {projects.length === 0 ? (
@@ -82,7 +84,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           {allAudits.length > 0 && (
             <div className="relative w-full sm:w-auto">
               <button
-                className="w-full sm:w-auto h-12 px-4 rounded-xl bg-gradient-to-br from-medium-blue/60 to-medium-blue/40 border border-white/10 focus:outline-none focus:border-accent-blue focus:ring-2 focus:ring-accent-blue/20 transition-all duration-300 backdrop-blur-sm flex items-center gap-2"
+                className="w-full sm:w-auto h-12 px-4 rounded-xl bg-gradient-to-br from-medium-blue/60 to-medium-blue/40 border border-white/10 hover:outline-none hover:border-accent-blue hover:ring-2 hover:ring-accent-blue/20 transition-all duration-300 backdrop-blur-sm flex items-center gap-2"
                 onClick={() => setAuditDropdownOpen(!auditDropdownOpen)}
               >
                 <Calendar size={16} className="text-accent-blue" />
