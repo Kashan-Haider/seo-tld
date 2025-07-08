@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { KeyRound, Globe, Languages } from 'lucide-react';
 import ErrorMessage from '../components/generate-keywords/ErrorMessage';
-import LoadingOverlay from '../components/generate-keywords/KeywordLoadingScreen';
+import LongTailKeywordLoadingScreen from '../components/generate-keywords/LongTailKeywordLoadingScreen';
 
 const defaultLang = 'en';
 const defaultCountry = 'us';
@@ -111,7 +111,7 @@ const LongTailKeywords: React.FC = () => {
           </button>
           {error && <div className="text-red-400 text-sm mt-2">{error}</div>}
         </form>
-        {loading && <LoadingOverlay step={1} totalSteps={1} message="Generating long-tail keywords..." />}
+        {loading && <LongTailKeywordLoadingScreen step={1} totalSteps={1} message="Generating long-tail keywords..." />}
         {error && <ErrorMessage error={error} />}
         {keywords.length > 0 && (
           <div className="mt-8">
