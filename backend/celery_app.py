@@ -10,7 +10,7 @@ celery_app = Celery(
     "seo_agent",
     broker=REDIS_URL,
     backend=REDIS_URL,
-    include=["tasks.audit_tasks"]
+    include=["tasks.audit_tasks", "tasks.keyword_tasks"]
 )
 
 celery_app.conf.update(
@@ -27,6 +27,7 @@ celery_app.conf.update(
     result_expires=3600,
     task_routes={
         "tasks.audit_tasks.*": {"queue": "audit"},
+        "tasks.keyword_tasks.*": {"queue": "keyword"},
     },
     task_default_queue="default",
 ) 

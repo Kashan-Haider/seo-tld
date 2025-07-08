@@ -51,13 +51,13 @@ const GenerateKeywords: React.FC = () => {
     setCurrentStep(1);
     setProgressMsg("");
     try {
-      // Update fetch to POST to /keywords/suggestions
-      // Update request/response variable names to match backend changes
-      const url = `/api/keywords/suggestions`;
-      const response = await fetch(url, {
+      const token = localStorage.getItem('access_token');
+      // Step 1: Start async keyword generation task
+      const startRes = await fetch('/api/keywords/suggestions-async', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           seed: seed,
@@ -66,47 +66,43 @@ const GenerateKeywords: React.FC = () => {
           top_n: defaultTopN,
         }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to generate keywords');
+      if (!startRes.ok) {
+        const errorData = await startRes.json();
+        throw new Error(errorData.message || 'Failed to start keyword generation');
       }
-
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('Failed to get reader from response body');
-      }
-
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        // Look for complete JSON objects
-        const matches = buffer.matchAll(/\{[\s\S]*?\}/g);
-        for (const match of matches) {
-          const jsonStr = match[0];
-          buffer = buffer.slice(jsonStr.length); // Remove processed JSON
-          const data = JSON.parse(jsonStr);
-          if (data.event === "progress") {
-            setCurrentStep(data.step || 1);
-            setProgressMsg(data.message || "");
-          } else if (data.event === "complete") {
-            setKeywords(data.keywords || []);
-            setLoading(false);
-            reader.releaseLock(); // Release reader
-            return;
-          } else if (data.event === "error") {
-            setError(data.message || "Unknown error");
-            setLoading(false);
-            reader.releaseLock(); // Release reader
-            return;
+      const { task_id } = await startRes.json();
+      // Step 2: Poll for progress
+      let done = false;
+      while (!done) {
+        await new Promise(res => setTimeout(res, 1200));
+        const pollRes = await fetch(`/api/keywords/task-status/${task_id}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
           }
+        });
+        if (!pollRes.ok) throw new Error('Failed to poll keyword generation status');
+        const data = await pollRes.json();
+        if (data.state === 'PENDING') {
+          setCurrentStep(1);
+          setProgressMsg('Queued...');
+        } else if (data.state === 'PROGRESS') {
+          setCurrentStep(data.current || 1);
+          setProgressMsg(data.status || 'In progress...');
+        } else if (data.state === 'SUCCESS') {
+          setCurrentStep(data.current || totalSteps);
+          setProgressMsg('Complete!');
+          setKeywords(data.result.keywords || []);
+          done = true;
+          setLoading(false);
+        } else if (data.state === 'FAILURE') {
+          setError(data.error || 'Keyword generation failed');
+          setLoading(false);
+          done = true;
+        } else {
+          setProgressMsg('Working...');
         }
       }
-      reader.releaseLock(); // Ensure reader is released if loop finishes without complete
     } catch (err: any) {
       setError(err.message || 'Unknown error');
       setLoading(false);
