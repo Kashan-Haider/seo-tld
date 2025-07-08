@@ -147,20 +147,37 @@ class AuditReportResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# Advanced Keyword Generation Schemas
-class AdvancedKeywordGenerationRequest(BaseModel):
+# Keyword Suggestion Schemas
+class LongTailKeywordRequest(BaseModel):
+    seed: str
+    lang: Optional[str] = 'en'
+    country: Optional[str] = 'us'
+
+class LongTailKeywordResponse(BaseModel):
+    keywords: List[str]
+
+class KeywordSuggestionRequest(BaseModel):
     seed: str
     lang: Optional[str] = 'en'
     country: Optional[str] = 'us'
     top_n: Optional[int] = 20
 
-class KeywordSimpleObject(BaseModel):
+class KeywordSuggestion(BaseModel):
     keyword: str
     search_volume: str
     keyword_difficulty: str
     competitive_density: str
     intent: str
 
-class AdvancedKeywordGenerationResponse(BaseModel):
-    keywords: List[KeywordSimpleObject]
+class KeywordSuggestionResponse(BaseModel):
+    keywords: List[KeywordSuggestion]
     metadata: dict
+
+class SaveKeywordRequest(BaseModel):
+    id: Optional[str] = None
+    keyword: str
+    search_volume: Optional[str] = None
+    keyword_difficulty: Optional[str] = None
+    competitive_density: Optional[str] = None
+    intent: Optional[str] = None
+    project_id: str

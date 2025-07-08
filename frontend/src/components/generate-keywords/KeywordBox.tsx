@@ -28,7 +28,7 @@ const KeywordBox: React.FC<KeywordBoxProps> = ({ kw, isSaved, onSaveChange, proj
   const handleSave = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/keyword/save", {
+      const res = await fetch("/api/keywords/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...kw, project_id: projectId })

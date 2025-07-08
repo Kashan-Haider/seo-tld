@@ -51,38 +51,62 @@ const GenerateKeywords: React.FC = () => {
     setCurrentStep(1);
     setProgressMsg("");
     try {
-      // Use SSE instead of fetch
-      const url = `/api/keyword/generate-advanced-stream?seed=${encodeURIComponent(seed)}&lang=${lang}&country=${country}&top_n=${defaultTopN}`;
-      const es = new EventSource(url);
+      // Update fetch to POST to /keywords/suggestions
+      // Update request/response variable names to match backend changes
+      const url = `/api/keywords/suggestions`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          seed: seed,
+          lang: lang,
+          country: country,
+          top_n: defaultTopN,
+        }),
+      });
 
-      es.onmessage = (event) => {
-        // Remove 'data: ' prefix if present (SSE protocol)
-        let jsonStr = event.data;
-        if (jsonStr.startsWith('data: ')) {
-          jsonStr = jsonStr.slice(6);
-        }
-        // Some servers may send multiple lines, join them
-        jsonStr = jsonStr.split('\n').filter(Boolean).join('');
-        const data = JSON.parse(jsonStr);
-        if (data.event === "progress") {
-          setCurrentStep(data.step || 1);
-          setProgressMsg(data.message || "");
-        } else if (data.event === "complete") {
-          setKeywords(data.keywords || []);
-          setLoading(false);
-          es.close();
-        } else if (data.event === "error") {
-          setError(data.message || "Unknown error");
-          setLoading(false);
-          es.close();
-        }
-      };
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to generate keywords');
+      }
 
-      es.onerror = () => {
-        setError("Connection lost or server error.");
-        setLoading(false);
-        es.close();
-      };
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('Failed to get reader from response body');
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        // Look for complete JSON objects
+        const matches = buffer.matchAll(/\{[\s\S]*?\}/g);
+        for (const match of matches) {
+          const jsonStr = match[0];
+          buffer = buffer.slice(jsonStr.length); // Remove processed JSON
+          const data = JSON.parse(jsonStr);
+          if (data.event === "progress") {
+            setCurrentStep(data.step || 1);
+            setProgressMsg(data.message || "");
+          } else if (data.event === "complete") {
+            setKeywords(data.keywords || []);
+            setLoading(false);
+            reader.releaseLock(); // Release reader
+            return;
+          } else if (data.event === "error") {
+            setError(data.message || "Unknown error");
+            setLoading(false);
+            reader.releaseLock(); // Release reader
+            return;
+          }
+        }
+      }
+      reader.releaseLock(); // Ensure reader is released if loop finishes without complete
     } catch (err: any) {
       setError(err.message || 'Unknown error');
       setLoading(false);

@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class KeywordGenerationService:
     @staticmethod
-    def generate_advanced_keywords(seed: str, lang: str = 'en', country: str = 'us', top_n: int = 10) -> Dict[str, Any]:
+    def generate_keyword_suggestions(seed: str, lang: str = 'en', country: str = 'us', top_n: int = 10) -> Dict[str, Any]:
         api_key = os.getenv('GOOGLE_API_KEY')
         if not api_key:
             logger.error("[KeywordGen] GOOGLE_API_KEY not found, cannot run LLM workflow.")
@@ -232,7 +232,7 @@ class KeywordGenerationService:
         }
 
     @staticmethod
-    def generate_advanced_keywords_stream(seed: str, lang: str = 'en', country: str = 'us', top_n: int = 10) -> Generator[str, None, None]:
+    def generate_keyword_suggestions_stream(seed: str, lang: str = 'en', country: str = 'us', top_n: int = 10) -> Generator[str, None, None]:
         """
         Generator version for SSE streaming. Yields JSON strings with progress updates.
         """

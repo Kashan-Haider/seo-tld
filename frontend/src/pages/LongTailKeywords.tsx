@@ -61,7 +61,7 @@ const LongTailKeywords: React.FC = () => {
     setError(null);
     setKeywords([]);
     try {
-      const res = await fetch('/api/keyword/generate', {
+      const res = await fetch('/api/keywords/long-tail', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ seed }), // Only send seed
@@ -111,7 +111,7 @@ const LongTailKeywords: React.FC = () => {
           </button>
           {error && <div className="text-red-400 text-sm mt-2">{error}</div>}
         </form>
-        {loading && <LoadingOverlay />}
+        {loading && <LoadingOverlay step={1} totalSteps={1} message="Generating long-tail keywords..." />}
         {error && <ErrorMessage error={error} />}
         {keywords.length > 0 && (
           <div className="mt-8">
