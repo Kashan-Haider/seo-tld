@@ -7,7 +7,6 @@ import StatCards from '../components/audit/StatCards';
 import MetricsTrends from '../components/audit/MetricsTrends';
 import PerformanceHistory from '../components/audit/PerformanceHistory';
 import NoAudits from './NoAudits';
-import LoadingScreen from '../components/LoadingScreen';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard: React.FC = () => {
@@ -17,33 +16,17 @@ const Dashboard: React.FC = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [projectsLoading, setProjectsLoading] = useState(true);
   const [isGeneratingAudit, setIsGeneratingAudit] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [auditDropdownOpen, setAuditDropdownOpen] = useState(false);
   const [selectedAudit, setSelectedAudit] = useState<any>(null);
-  
+  const [auditTaskId, setAuditTaskId] = useState<string | null>(null);
+  const [auditTaskStatus, setAuditTaskStatus] = useState<string | null>(null);
+  const [auditTaskProgress, setAuditTaskProgress] = useState<number>(0);
+  const [auditTaskError, setAuditTaskError] = useState<string | null>(null);
+  const [isPollingAudit, setIsPollingAudit] = useState(false);
+
   const { user } = useAuth();
   const { setProjects, selectedProject, projects, setSelectedProject } = useProjectStore();
   const navigate = useNavigate();
-
-  // Get second latest audit for trend calculations
-  const secondLatestAudit = allAudits.length > 1 ? allAudits[1] : null;
-
-  // Get the audit before the selected audit for trend calculations
-  const getAuditBeforeSelected = useCallback(() => {
-    if (!selectedAudit || allAudits.length <= 1) return null;
-    const selectedIndex = allAudits.findIndex(audit => audit.id === selectedAudit.id);
-    if (selectedIndex === -1) return null;
-    
-    // If selected audit is the first one, return the second audit
-    if (selectedIndex === 0) {
-      return allAudits.length > 1 ? allAudits[1] : null;
-    }
-    
-    // Otherwise return the audit before the selected one
-    return allAudits[selectedIndex + 1]; // +1 because audits are sorted newest first
-  }, [selectedAudit, allAudits]);
-
-  const auditBeforeSelected = getAuditBeforeSelected();
 
   // Memoize chart data to prevent recalculation on every render
   const chartData = useMemo(() => {
@@ -80,7 +63,6 @@ const Dashboard: React.FC = () => {
           'Content-Type': 'application/json',
         },
       });
-      
       if (res.ok) {
         const data = await res.json();
         setAllAudits(data);
@@ -98,15 +80,17 @@ const Dashboard: React.FC = () => {
     }
   }, []);
 
-  // Generate new audit
+  // Generate new audit (async, with polling)
   const handleGenerateAudit = useCallback(async () => {
     try {
       setIsGeneratingAudit(true);
-      setError(null);
-      
+      setAuditTaskError(null);
+      setAuditTaskStatus('Starting audit...');
+      setAuditTaskProgress(0);
+      setAuditTaskId(null);
+      setIsPollingAudit(false);
       const token = localStorage.getItem('access_token');
       if (!selectedProject) throw new Error('No project selected');
-      
       const res = await fetch('/api/audit', {
         method: 'POST',
         headers: {
@@ -119,36 +103,74 @@ const Dashboard: React.FC = () => {
           url: selectedProject.website_url,
         }),
       });
-      
-      if (!res.ok) throw new Error('Failed to generate audit');
-      
-      // Wait a moment for backend to process and DB to update
-      await new Promise(resolve => setTimeout(resolve, 1200));
-      
-      // Refetch audits
-      await fetchAudits(selectedProject.id);
+      if (!res.ok) throw new Error('Failed to start audit');
+      const data = await res.json();
+      if (!data.task_id) throw new Error('No task_id returned');
+      setAuditTaskId(data.task_id);
+      setIsPollingAudit(true);
     } catch (e) {
-      console.error('Error generating audit:', e);
-      setError('An error occurred while generating the audit.');
-    } finally {
+      setAuditTaskError('An error occurred while starting the audit.');
       setIsGeneratingAudit(false);
     }
-  }, [selectedProject, fetchAudits]);
+  }, [selectedProject]);
 
-  // Handle audit deletion
-  const handleAuditDeleted = useCallback((auditId: number) => {
-    // Remove the deleted audit from the local state
-    setAllAudits(prevAudits => prevAudits.filter(audit => audit.id !== auditId));
-    
-    // Update selected audit if the deleted one was selected
-    setSelectedAudit((prevSelected: any) => {
-      if (prevSelected?.id === auditId) {
-        const remainingAudits = allAudits.filter(audit => audit.id !== auditId);
-        return remainingAudits.length > 0 ? remainingAudits[0] : null;
+  // Poll audit task status
+  useEffect(() => {
+    if (!auditTaskId || !isPollingAudit) return;
+    let isMounted = true;
+    let interval: number;
+    const poll = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        const res = await fetch(`/api/audit/task-status/${auditTaskId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        const data = await res.json();
+        if (!isMounted) return;
+        if (data.state === 'PROGRESS' && data.status) {
+          setAuditTaskStatus(data.status);
+        } else if (data.status) {
+          setAuditTaskStatus(data.status);
+        } else if (data.state) {
+          setAuditTaskStatus(data.state);
+        }
+        const progress = typeof data.current === 'number' ? data.current : (data.meta && typeof data.meta.current === 'number' ? data.meta.current : undefined);
+        const total = typeof data.total === 'number' ? data.total : (data.meta && typeof data.meta.total === 'number' ? data.meta.total : 100);
+        setAuditTaskProgress(
+          typeof progress === 'number' && typeof total === 'number'
+            ? Math.round((progress / total) * 100)
+            : 10
+        );
+        if (data.state === 'SUCCESS') {
+          setIsGeneratingAudit(false);
+          setIsPollingAudit(false);
+          setAuditTaskId(null);
+          setAuditTaskStatus('Audit complete!');
+          if (selectedProject) {
+            await fetchAudits(selectedProject.id);
+          }
+        } else if (data.state === 'FAILURE') {
+          setIsGeneratingAudit(false);
+          setIsPollingAudit(false);
+          setAuditTaskError(data.error || 'Audit failed.');
+        }
+      } catch (e) {
+        if (!isMounted) return;
+        setAuditTaskError('Error polling audit status.');
+        setIsGeneratingAudit(false);
+        setIsPollingAudit(false);
       }
-      return prevSelected;
-    });
-  }, [allAudits]);
+    };
+    interval = window.setInterval(poll, 2000);
+    poll();
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [auditTaskId, isPollingAudit, selectedProject, fetchAudits]);
 
   // Fetch projects
   const fetchProjects = useCallback(async () => {
@@ -161,20 +183,17 @@ const Dashboard: React.FC = () => {
           'Content-Type': 'application/json',
         },
       });
-      
       if (!res.ok) throw new Error('Failed to fetch projects');
-      
       const data = await res.json();
       const userProjects = data.filter((p: any) => p.owner_id === user?.id);
       setProjects(userProjects);
     } catch (error) {
-      console.error('Error fetching projects:', error);
+      // log error
     } finally {
       setProjectsLoading(false);
     }
   }, [user?.id, setProjects]);
 
-  // Effects
   useEffect(() => {
     if (user?.id) {
       fetchProjects();
@@ -203,8 +222,33 @@ const Dashboard: React.FC = () => {
     }
   }, [allAudits]);
 
-  if (isGeneratingAudit) {
-    return <LoadingScreen />;
+  // Handle audit deletion
+  const handleAuditDeleted = useCallback((auditId: number) => {
+    setAllAudits(prevAudits => prevAudits.filter(audit => audit.id !== auditId));
+    setSelectedAudit((prevSelected: any) => {
+      if (prevSelected?.id === auditId) {
+        const remainingAudits = allAudits.filter(audit => audit.id !== auditId);
+        return remainingAudits.length > 0 ? remainingAudits[0] : null;
+      }
+      return prevSelected;
+    });
+  }, [allAudits]);
+
+  if ((isGeneratingAudit || isPollingAudit) && selectedProject) {
+    return (
+      <div className="w-full bg-dark-blue flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-4">
+          <div className="text-white text-lg font-semibold">{auditTaskStatus || 'Generating audit...'}</div>
+          <div className="w-64 bg-gray-700 rounded-full h-4 overflow-hidden">
+            <div
+              className="bg-accent-blue h-4 rounded-full transition-all duration-300"
+              style={{ width: `${typeof auditTaskProgress === 'number' ? auditTaskProgress : 10}%` }}
+            ></div>
+          </div>
+          {auditTaskError && <div className="text-red-400 mt-2">{auditTaskError}</div>}
+        </div>
+      </div>
+    );
   }
 
   if (projectsLoading) {
@@ -240,13 +284,12 @@ const Dashboard: React.FC = () => {
               projectName={selectedProject.name || ''}
               onGenerateAudit={isGeneratingAudit ? undefined : handleGenerateAudit}
               isLoading={isGeneratingAudit}
-              error={error}
+              error={auditTaskError}
             />
           </div>
         ) : (
           <>
-            <StatCards latestAudit={selectedAudit} secondLatestAudit={auditBeforeSelected} />
-            
+            <StatCards latestAudit={selectedAudit} secondLatestAudit={allAudits.length > 1 ? allAudits[1] : null} />
             <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8 items-center lg:items-start">
               <div className="col-span-2 flex flex-col gap-6">
                 <AuditReportCard
@@ -262,7 +305,6 @@ const Dashboard: React.FC = () => {
               </div>
               <MetricsTrends chartData={chartData} />
             </div>
-            
             <PerformanceHistory chartData={chartData} allAudits={allAudits} onAuditDeleted={handleAuditDeleted} />
           </>
         )}

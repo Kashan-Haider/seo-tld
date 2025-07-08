@@ -14,7 +14,7 @@ class AuditService:
     def __init__(self):
         self.pagespeed = PageSpeedService()
     
-    async def generate_audit(self, request: AuditRequest, db: Session) -> AuditResult:
+    async def generate_audit(self, request: AuditRequest, db: Session, mobile_lighthouse=None, desktop_lighthouse=None) -> AuditResult:
         print('Generating audit...')
         try:
             project = db.query(Project).filter(Project.id == request.project_id).first()
@@ -22,8 +22,10 @@ class AuditService:
                 raise HTTPException(status_code=404, detail="Project not found")
             
             categories = ["performance", "accessibility", "best-practices", "seo", "pwa"]
-            mobile_lighthouse = await self.pagespeed.analyze_page(str(project.website_url), "mobile", categories=categories)
-            desktop_lighthouse = await self.pagespeed.analyze_page(str(project.website_url), "desktop", categories=categories)
+            if mobile_lighthouse is None:
+                mobile_lighthouse = await self.pagespeed.analyze_page(str(project.website_url), "mobile", categories=categories)
+            if desktop_lighthouse is None:
+                desktop_lighthouse = await self.pagespeed.analyze_page(str(project.website_url), "desktop", categories=categories)
 
             def extract_summary(lh):
                 audits = lh.get('audits', {})
