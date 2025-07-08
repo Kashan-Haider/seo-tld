@@ -3,6 +3,7 @@ import { useProjectStore } from '../store/projectStore';
 import { ArrowLeft, BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import SavedKeywordBox from '../components/generate-keywords/SavedKeywordBox ';
+import { toast } from 'react-hot-toast';
 
 interface KeywordSimpleObject {
   id: string;
@@ -82,8 +83,9 @@ const SavedKeywords: React.FC = () => {
       const res = await fetch(`/api/keywords/delete/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to unsave keyword');
       setSavedKeywords(prev => prev.filter(kw => kw.id !== id));
+      toast.success('Keyword removed from saved list.');
     } catch (e) {
-      // Optionally show error
+      toast.error('Failed to unsave keyword. Please try again.');
     } finally {
       setUnsaveLoading(false);
       setConfirmUnsaveId(null);

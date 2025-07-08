@@ -6,8 +6,10 @@ import type { AuditReportCardProps, Opportunity } from '../../typing';
 
 const CircularScore: React.FC<{ label: string; score: number; color: string }> = ({ label, score, color }) => (
   <div className="flex flex-col items-center justify-center w-32 h-32">
-    <ResponsiveContainer width={110} height={110}>
+    <div style={{ width: 110, height: 110 }}>
       <RadialBarChart
+        width={110}
+        height={110}
         cx="50%"
         cy="50%"
         innerRadius={38}
@@ -24,7 +26,7 @@ const CircularScore: React.FC<{ label: string; score: number; color: string }> =
           fill={color}
         />
       </RadialBarChart>
-    </ResponsiveContainer>
+    </div>
     <div className="text-2xl font-extrabold text-white mt-2">{score}</div>
     <div className="text-base font-semibold text-white/80 mt-1">{label}</div>
   </div>

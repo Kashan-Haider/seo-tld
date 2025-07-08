@@ -8,6 +8,7 @@ import MetricsTrends from '../components/audit/MetricsTrends';
 import PerformanceHistory from '../components/audit/PerformanceHistory';
 import NoAudits from './NoAudits';
 import { useNavigate } from 'react-router-dom';
+import DashboardLoadingScreen from '../components/DashboardLoadingScreen';
 
 const Dashboard: React.FC = () => {
   const [latestAudit, setLatestAudit] = useState<any>(null);
@@ -23,7 +24,7 @@ const Dashboard: React.FC = () => {
   const [auditTaskProgress, setAuditTaskProgress] = useState<number>(0);
   const [auditTaskError, setAuditTaskError] = useState<string | null>(null);
   const [isPollingAudit, setIsPollingAudit] = useState(false);
-
+  
   const { user } = useAuth();
   const { setProjects, selectedProject, projects, setSelectedProject } = useProjectStore();
   const navigate = useNavigate();
@@ -235,28 +236,11 @@ const Dashboard: React.FC = () => {
   }, [allAudits]);
 
   if ((isGeneratingAudit || isPollingAudit) && selectedProject) {
-    return (
-      <div className="w-full bg-dark-blue flex items-center justify-center min-h-screen">
-        <div className="flex flex-col items-center gap-4">
-          <div className="text-white text-lg font-semibold">{auditTaskStatus || 'Generating audit...'}</div>
-          <div className="w-64 bg-gray-700 rounded-full h-4 overflow-hidden">
-            <div
-              className="bg-accent-blue h-4 rounded-full transition-all duration-300"
-              style={{ width: `${typeof auditTaskProgress === 'number' ? auditTaskProgress : 10}%` }}
-            ></div>
-          </div>
-          {auditTaskError && <div className="text-red-400 mt-2">{auditTaskError}</div>}
-        </div>
-      </div>
-    );
+    return <DashboardLoadingScreen message={auditTaskStatus || 'Generating audit...'} progress={auditTaskProgress} />;
   }
 
   if (projectsLoading) {
-    return (
-      <div className="w-full bg-dark-blue flex items-center justify-center min-h-screen">
-        <div className="text-white text-lg">Loading projects...</div>
-      </div>
-    );
+    return <DashboardLoadingScreen message="Loading projects..." progress={0} />;
   }
 
   return (

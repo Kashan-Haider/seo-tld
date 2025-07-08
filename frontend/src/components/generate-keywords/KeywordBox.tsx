@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Bookmark, BookmarkCheck } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 export interface KeywordBoxProps {
   kw: {
@@ -28,22 +29,30 @@ const KeywordBox: React.FC<KeywordBoxProps> = ({ kw, isSaved, onSaveChange, proj
   const handleSave = async () => {
     setLoading(true);
     try {
+      // Only send id if it's a valid UUID
+      const { id, ...rest } = kw;
+      const isUUID = typeof id === 'string' && /^[0-9a-fA-F-]{36}$/.test(id);
+      const payload = isUUID ? { ...kw, project_id: projectId } : { ...rest, project_id: projectId };
+      if (!isUUID) delete (payload as any).id;
       const res = await fetch("/api/keywords/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...kw, project_id: projectId })
+        body: JSON.stringify(payload)
       });
       if (!res.ok) throw new Error("Failed to save keyword");
-      onSaveChange(kw.id, true);
+      // Use keyword as the key for saved state
+      onSaveChange(kw.keyword, true);
+      toast.success('Keyword saved!');
     } catch (e) {
-      // Optionally show error
+      toast.error('Failed to save keyword. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleUnsave = () => {
-    onSaveChange(kw.id, false);
+    onSaveChange(kw.keyword, false);
+    toast.success('Keyword removed from saved list.');
   };
 
   return (

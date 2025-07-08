@@ -77,7 +77,7 @@ const LongTailKeywords: React.FC = () => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-dark-blue flex flex-col items-center py-10 px-4 md:px-20 lg:px-40">
+    <div className="w-full bg-dark-blue flex flex-col items-center py-10 px-4 md:px-20 lg:px-40">
       <div className="w-full mx-auto flex flex-col gap-6">
         {/* Header */}
         <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">

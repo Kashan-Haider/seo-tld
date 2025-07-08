@@ -190,7 +190,7 @@ const ProtectedLayout: React.FC = () => {
   return isAuthenticated ? (
     <div className="h-screen w-full flex flex-col md:flex-row bg-dark-blue overflow-hidden">
       <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 min-h-screen flex flex-col overflow-hidden">
         <Navbar />
         <main className="flex-1 overflow-y-auto custom-scrollbar">
           <Outlet />

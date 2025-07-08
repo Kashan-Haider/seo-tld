@@ -83,7 +83,7 @@ def delete_keyword(keyword_id: str, db=Depends(get_db)):
 @router.get("/saved/{project_id}", response_model=List[KeywordResponse])
 def get_saved_keywords(project_id: str, db=Depends(get_db)):
     keywords = db.query(KeywordModel).filter(KeywordModel.project_id == project_id).all()
-    return keywords
+    return keywords 
 
 # Add import for Celery keyword task
 

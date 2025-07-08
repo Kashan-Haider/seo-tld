@@ -109,20 +109,41 @@ const GenerateKeywords: React.FC = () => {
     }
   };
 
-  const handleSaveChange = (id: string, isNowSaved: boolean) => {
-    setSaved(prev => ({ ...prev, [id]: isNowSaved }));
+  const handleSaveChange = async (keyword: string, isNowSaved: boolean) => {
+    setSaved(prev => ({ ...prev, [keyword]: isNowSaved }));
+    if (!isNowSaved) {
+      // Find the keyword object by keyword string
+      const kwObj = keywords.find(kw => kw.keyword === keyword);
+      // If it has a valid UUID id, delete from backend
+      if (kwObj && typeof kwObj.id === 'string' && /^[0-9a-fA-F-]{36}$/.test(kwObj.id)) {
+        try {
+          const res = await fetch(`/api/keywords/delete/${kwObj.id}`, { method: 'DELETE' });
+          if (!res.ok) throw new Error('Failed to unsave keyword');
+        } catch (e) {
+          // Optionally show error toast here
+        }
+      }
+      // Remove id from the keyword object in the keywords array
+      setKeywords(prev =>
+        prev.map(kw =>
+          kw.keyword === keyword
+            ? { ...kw, id: '' }
+            : kw
+        )
+      );
+    }
   };
 
   if (!projectId) {
     return (
-      <div className="w-full min-h-screen bg-dark-blue flex flex-col items-center justify-center">
+      <div className="w-full h-full bg-dark-blue flex flex-col items-center justify-center">
         <div className="text-white text-lg">Please select or create a project to generate and save keywords.</div>
       </div>
     );
   }
 
   return (
-    <div className="w-full min-h-screen bg-dark-blue flex flex-col items-center py-10 px-4 md:px-20 lg:px-40">
+    <div className="w-full h-full bg-dark-blue flex flex-col items-center py-10 px-4 md:px-20 lg:px-40">
       <div className="w-full mx-auto flex flex-col gap-6">
         {/* Link to Saved Keywords page */}
         <div className="flex justify-end mb-2">
@@ -242,7 +263,7 @@ const GenerateKeywords: React.FC = () => {
               {keywords.map((kw, i) => (
                 <KeywordBox
                   key={kw.keyword + i}
-                  kw={{ ...kw, id: kw.keyword }}
+                  kw={kw} // do not set id here
                   isSaved={!!saved[kw.keyword]}
                   onSaveChange={handleSaveChange}
                   projectId={projectId}

@@ -44,9 +44,9 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label })
 const CustomLegend = (props: any) => {
   const { payload } = props;
   return (
-    <div className="flex gap-4 items-center mt-2 mb-4 justify-end pr-4">
+    <div className="flex gap-4 md:gap-8 w-full items-center justify-center mt-2 mb-4">
       {payload.map((entry: any, idx: number) => (
-        <div key={idx} className="flex items-center gap-2">
+        <div key={idx} className="flex items-center justify-center gap-2">
           <span className="w-4 h-4 rounded-full" style={{ background: entry.color, opacity: 0.9 }}></span>
           <span className="text-xs md:text-sm font-semibold text-white/80">{entry.value}</span>
         </div>
