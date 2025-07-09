@@ -62,10 +62,14 @@ class CompetitorAnalysisService:
             meta = soup.find('meta', attrs={'name': 'description'})
             if isinstance(meta, Tag):
                 meta_desc = meta.get('content', '')
-            full_text = f"{title} {meta_desc} {text}"
+            # Extract H1 and H2 tags
+            h1_tags = ' '.join([h1.get_text(strip=True) for h1 in soup.find_all('h1')])
+            h2_tags = ' '.join([h2.get_text(strip=True) for h2 in soup.find_all('h2')])
+            # Combine all context
+            full_text = f"{title} {meta_desc} {h1_tags} {h2_tags} {text}"
             # Use YAKE for keyword extraction (n=1 and n=2)
-            kw_extractor1 = yake.KeywordExtractor(lan="en", n=1, top=max_keywords*2)
-            kw_extractor2 = yake.KeywordExtractor(lan="en", n=2, top=max_keywords*2)
+            kw_extractor1 = yake.KeywordExtractor(lan="en", n=1, top=max_keywords*4)
+            kw_extractor2 = yake.KeywordExtractor(lan="en", n=2, top=max_keywords*4)
             keywords1 = [kw for kw, score in kw_extractor1.extract_keywords(full_text)]
             keywords2 = [kw for kw, score in kw_extractor2.extract_keywords(full_text)]
             # Combine, deduplicate, and filter stopwords/short words
@@ -79,14 +83,47 @@ class CompetitorAnalysisService:
             # Prioritize by frequency
             freq = Counter(filtered)
             sorted_keywords = [kw for kw, _ in freq.most_common()]
-            # Return top unique keywords
-            unique_keywords = []
+            # Get unique candidate keywords
+            candidate_keywords = []
             for kw in sorted_keywords:
-                if kw not in unique_keywords:
-                    unique_keywords.append(kw)
-                if len(unique_keywords) >= max_keywords:
-                    break
-            return unique_keywords
+                if kw not in candidate_keywords:
+                    candidate_keywords.append(kw)
+            # Use LLM to filter and rank for business relevance
+            api_key = os.getenv('GOOGLE_API_KEY')
+            if not api_key or not candidate_keywords:
+                # fallback to YAKE only if LLM not available
+                return candidate_keywords[:max_keywords]
+            llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", "You are an expert SEO strategist."),
+                ("user", (
+                    "Given the following information about a website, select the most business-relevant, short, SEO-friendly keywords that best represent the website's main topics and offerings.\n"
+                    "Title: {title}\n"
+                    "Meta Description: {meta_desc}\n"
+                    "H1 Tags: {h1_tags}\n"
+                    "H2 Tags: {h2_tags}\n"
+                    "Candidate Keywords: {candidate_keywords}\n"
+                    "Return a JSON array of the top {max_keywords} keywords, each as a string. Do not include explanations or extra text."
+                ))
+            ])
+            chain = prompt | llm | RunnableLambda(lambda x: x.content)
+            result = chain.invoke({
+                "title": title,
+                "meta_desc": meta_desc,
+                "h1_tags": h1_tags,
+                "h2_tags": h2_tags,
+                "candidate_keywords": ', '.join(candidate_keywords[:max_keywords*6]),
+                "max_keywords": max_keywords
+            })
+            import json, re
+            try:
+                match = re.search(r'\[.*\]', result, re.DOTALL)
+                if match:
+                    return json.loads(match.group(0))
+                return json.loads(result)
+            except Exception:
+                # fallback to YAKE if LLM output is not parseable
+                return candidate_keywords[:max_keywords]
         except Exception as e:
             # Log or handle error as needed
             return []
