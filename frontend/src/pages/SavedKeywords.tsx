@@ -110,7 +110,7 @@ const SavedKeywords: React.FC = () => {
     <div className="w-full min-h-screen bg-dark-blue flex flex-col items-center py-10 px-4 md:px-20 lg:px-40">
       <div className="w-full mx-auto flex flex-col gap-6">
         <div className="flex items-center gap-3 mb-2">
-          <Link to="/generate-keywords" className="text-accent-blue hover:underline flex items-center">
+          <Link to="/generate-keywords" className="text-white hover:underline flex items-center">
             <ArrowLeft size={20} /> Back
           </Link>
           <BookOpen size={28} className="text-green-400" />

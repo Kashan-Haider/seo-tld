@@ -1,49 +1,43 @@
 import React from 'react';
 
-interface AuditLoadingScreenProps {
+interface ContentGapLoadingScreenProps {
   message?: string;
-  progress?: number; // 0-100
+  // progress?: number; // Remove progress prop
 }
 
-const AuditLoadingScreen: React.FC<AuditLoadingScreenProps> = ({ message }) => {
+const ContentGapLoadingScreen: React.FC<ContentGapLoadingScreenProps> = ({ message }) => {
   return (
     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-dark-blue via-medium-blue to-dark-blue relative overflow-hidden">
-      {/* 3D Loader */}
       <div className="relative flex flex-col items-center gap-10 z-10">
         {/* 3D Orbital Loader with floating cubes */}
-        <div className="relative w-48 h-48 flex items-center justify-center">
-          {/* Glow Sphere (subtle) */}
+        <div className="relative w-40 h-40 flex items-center justify-center">
           <div className="absolute inset-0 rounded-full bg-gradient-to-br from-accent-blue via-light-purple to-neon-cyan blur-2xl opacity-40 animate-pulse" />
-          {/* 3D Spinning Rings */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <svg width="180" height="180" viewBox="0 0 180 180" fill="none" className="animate-spin-slow">
-              <ellipse cx="90" cy="90" rx="80" ry="32" stroke="#22d3ee" strokeWidth="5" fill="none" opacity="0.3" />
+            <svg width="140" height="140" viewBox="0 0 140 140" fill="none" className="animate-spin-slow">
+              <ellipse cx="70" cy="70" rx="60" ry="24" stroke="#22d3ee" strokeWidth="4" fill="none" opacity="0.3" />
             </svg>
-            <svg width="180" height="180" viewBox="0 0 180 180" fill="none" className="absolute animate-spin-reverse-slow">
-              <ellipse cx="90" cy="90" rx="32" ry="80" stroke="#a259ff" strokeWidth="5" fill="none" opacity="0.3" />
+            <svg width="140" height="140" viewBox="0 0 140 140" fill="none" className="absolute animate-spin-reverse-slow">
+              <ellipse cx="70" cy="70" rx="24" ry="60" stroke="#a259ff" strokeWidth="4" fill="none" opacity="0.3" />
             </svg>
-            <svg width="180" height="180" viewBox="0 0 180 180" fill="none" className="absolute animate-spin-slower">
-              <ellipse cx="90" cy="90" rx="60" ry="60" stroke="#3b82f6" strokeWidth="3" fill="none" opacity="0.2" />
+            <svg width="140" height="140" viewBox="0 0 140 140" fill="none" className="absolute animate-spin-slower">
+              <ellipse cx="70" cy="70" rx="45" ry="45" stroke="#3b82f6" strokeWidth="2" fill="none" opacity="0.2" />
             </svg>
           </div>
-          {/* Central Sphere (subtle shadow) */}
-          <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-accent-blue via-light-purple to-neon-cyan shadow-lg border-4 border-white/10" />
-          {/* Floating 3D Cubes */}
-          <div className="absolute left-2 top-8 animate-float-cube1">
-            <div className="w-8 h-8 bg-gradient-to-br from-accent-blue to-neon-cyan shadow-lg rounded-lg transform rotate-12 blur-[1px] border-2 border-white/10" />
+          <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-accent-blue via-light-purple to-neon-cyan shadow-lg border-4 border-white/10" />
+          <div className="absolute left-2 top-6 animate-float-cube1">
+            <div className="w-5 h-5 bg-gradient-to-br from-accent-blue to-neon-cyan shadow-lg rounded-lg transform rotate-12 blur-[1px] border-2 border-white/10" />
           </div>
-          <div className="absolute right-4 bottom-6 animate-float-cube2">
-            <div className="w-6 h-6 bg-gradient-to-br from-light-purple to-accent-blue shadow-md rounded-lg transform rotate-45 blur-[0.5px] border-2 border-white/10" />
+          <div className="absolute right-3 bottom-4 animate-float-cube2">
+            <div className="w-4 h-4 bg-gradient-to-br from-light-purple to-accent-blue shadow-md rounded-lg transform rotate-45 blur-[0.5px] border-2 border-white/10" />
           </div>
-          <div className="absolute left-12 bottom-2 animate-float-cube3">
-            <div className="w-5 h-5 bg-gradient-to-br from-neon-cyan to-accent-blue shadow rounded-lg transform rotate-6 blur-[0.5px] border-2 border-white/10" />
+          <div className="absolute left-8 bottom-1 animate-float-cube3">
+            <div className="w-3 h-3 bg-gradient-to-br from-neon-cyan to-accent-blue shadow rounded-lg transform rotate-6 blur-[0.5px] border-2 border-white/10" />
           </div>
         </div>
-        <div className="text-2xl md:text-3xl font-extrabold text-white animate-pulse-fade mt-2">
-          {message || 'Loading projects...'}
+        <div className="text-xl md:text-2xl font-extrabold text-white animate-pulse-fade mt-2 text-center">
+          {message || 'Analyzing content gaps and recommendations...'}
         </div>
       </div>
-      {/* Futuristic Grid Background */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <svg width="100%" height="100%" viewBox="0 0 1920 1080" className="w-full h-full opacity-20">
           <defs>
@@ -52,7 +46,6 @@ const AuditLoadingScreen: React.FC<AuditLoadingScreenProps> = ({ message }) => {
               <stop offset="100%" stopColor="#a259ff" stopOpacity="0.06" />
             </linearGradient>
           </defs>
-          {/* Vertical lines */}
           {Array.from({ length: 40 }).map((_, i) => (
             <line
               key={`v-${i}`}
@@ -64,7 +57,6 @@ const AuditLoadingScreen: React.FC<AuditLoadingScreenProps> = ({ message }) => {
               strokeWidth="1"
             />
           ))}
-          {/* Horizontal lines */}
           {Array.from({ length: 22 }).map((_, i) => (
             <line
               key={`h-${i}`}
@@ -78,7 +70,6 @@ const AuditLoadingScreen: React.FC<AuditLoadingScreenProps> = ({ message }) => {
           ))}
         </svg>
       </div>
-      {/* Animations */}
       <style>{`
         .animate-spin-slow { animation: spin 2.5s linear infinite; }
         .animate-spin-reverse-slow { animation: spin-reverse 3.5s linear infinite; }
@@ -98,4 +89,4 @@ const AuditLoadingScreen: React.FC<AuditLoadingScreenProps> = ({ message }) => {
   );
 };
 
-export default AuditLoadingScreen; 
+export default ContentGapLoadingScreen; 

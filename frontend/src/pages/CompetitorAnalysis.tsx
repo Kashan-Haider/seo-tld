@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { BarChart3, Globe, KeyRound, Users } from 'lucide-react';
+import CompetitorKeywordLoadingScreen from '../components/competitor-analysis/CompetitorKeywordLoadingScreen';
+import ContentGapLoadingScreen from '../components/competitor-analysis/ContentGapLoadingScreen';
 
 const MAX_KEYWORDS = 5;
 const MAX_COMPETITORS = 10;
@@ -34,6 +36,7 @@ const CompetitorAnalysis: React.FC = () => {
   const [gapLoading, setGapLoading] = useState(false);
   const [gapError, setGapError] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [loadingScreen, setLoadingScreen] = useState<null | { type: 'competitor' | 'gap', progress: number, message: string }>(null);
 
   // Step 1: Extract keywords from user URL
   const handleExtractKeywords = async () => {
@@ -94,6 +97,7 @@ const CompetitorAnalysis: React.FC = () => {
     setGapLoading(true);
     setGapError(null);
     setAnalysisResult(null);
+    setLoadingScreen({ type: 'competitor', progress: 0, message: 'Extracting competitor keywords...' });
     try {
       const token = localStorage.getItem('access_token');
       // 1. Extract competitor keywords (async task)
@@ -110,6 +114,7 @@ const CompetitorAnalysis: React.FC = () => {
       // Poll for result
       let keywordsResult = null;
       for (let i = 0; i < 210; i++) { // up to 210s
+        setLoadingScreen({ type: 'competitor', progress: Math.round((i / 210) * 100), message: `Extracting competitor keywords... (${i + 1}s)` });
         await new Promise(r => setTimeout(r, 1000));
         const pollRes = await fetch(`/api/competitor-analysis/keywords-task-status/${keywordsTaskId}`, {
           headers: {
@@ -126,8 +131,8 @@ const CompetitorAnalysis: React.FC = () => {
       }
       if (!keywordsResult) throw new Error('Competitor keyword extraction timed out');
       setCompetitorKeywords(keywordsResult);
+      setLoadingScreen({ type: 'gap', progress: 0, message: 'Analyzing content gaps and recommendations...' });
       // 2. Analyze content gap (async task)
-      // Pass user_url and competitor_urls for full content scraping
       const res2 = await fetch('/api/competitor-analysis/content-gap-analysis', {
         method: 'POST',
         headers: {
@@ -142,6 +147,7 @@ const CompetitorAnalysis: React.FC = () => {
       // Poll for result
       let gapResult = null;
       for (let i = 0; i < 210; i++) { // up to 210s
+        setLoadingScreen({ type: 'gap', progress: Math.round((i / 210) * 100), message: `Analyzing content gaps and recommendations... (${i + 1}s)` });
         await new Promise(r => setTimeout(r, 1000));
         const pollRes = await fetch(`/api/competitor-analysis/content-gap-task-status/${gapTaskId}`, {
           headers: {
@@ -156,6 +162,7 @@ const CompetitorAnalysis: React.FC = () => {
           throw new Error('Content gap analysis failed');
         }
       }
+      setLoadingScreen(null);
       // Defensive: If gapResult is empty or malformed, show fallback message and advance step
       if (!gapResult || typeof gapResult !== 'object' || (!gapResult.content_gaps && !gapResult.recommendations)) {
         setAnalysisResult({ content_gaps: [], recommendations: ['No analysis result returned. Please try again or check your input.'] });
@@ -166,6 +173,7 @@ const CompetitorAnalysis: React.FC = () => {
       setStep(4);
     } catch (err: any) {
       setGapError(err.message || 'An error occurred');
+      setLoadingScreen(null);
     } finally {
       setGapLoading(false);
     }
@@ -195,6 +203,16 @@ const CompetitorAnalysis: React.FC = () => {
 
   return (
     <div className="w-full min-h-full bg-gradient-to-br from-dark-blue via-medium-blue to-dark-blue flex flex-col items-center justify-center py-10 px-2 md:px-8 lg:px-16">
+      {loadingScreen && loadingScreen.type === 'competitor' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-dark-blue/90 backdrop-blur-lg">
+          <CompetitorKeywordLoadingScreen message={loadingScreen.message} />
+        </div>
+      )}
+      {loadingScreen && loadingScreen.type === 'gap' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-dark-blue/90 backdrop-blur-lg">
+          <ContentGapLoadingScreen message={loadingScreen.message} />
+        </div>
+      )}
       <div className="w-full max-w-3xl mx-auto flex flex-col gap-8 items-center">
         {/* Header */}
         <div className="flex flex-col items-center gap-2 mb-6">
