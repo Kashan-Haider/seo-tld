@@ -15,6 +15,56 @@ const stepLabels = [
 
 const accent = 'from-accent-blue via-light-purple to-accent-blue';
 
+// Utility to convert analysisResult to CSV
+function analysisResultToCSV(result: any): string {
+  if (!result) return '';
+  // Content Gaps
+  const gapRows = (result.content_gaps || []).map((gap: any) => {
+    if (typeof gap === 'string') {
+      return ['Content Gap', gap, '', ''];
+    } else {
+      return [
+        'Content Gap',
+        gap.gap_type || '',
+        gap.explanation || '',
+        gap.seo_impact || ''
+      ];
+    }
+  });
+  // Recommendations
+  const recRows = (result.recommendations || []).map((rec: any) => {
+    if (typeof rec === 'string') {
+      return ['Recommendation', rec, '', ''];
+    } else {
+      return [
+        'Recommendation',
+        rec.title || '',
+        rec.detail || '',
+        Object.keys(rec)
+          .filter(k => k !== 'title' && k !== 'detail')
+          .map(k => `${k}: ${String(rec[k])}`)
+          .join('; ')
+      ];
+    }
+  });
+  const header = ['Type', 'Title/Gap', 'Detail/Explanation', 'SEO Impact/Other'];
+  const rows = [header, ...gapRows, ...recRows];
+  return rows.map(row => row.map((field: string) => `"${(field || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+}
+
+function downloadAnalysisCSV(result: any) {
+  const csv = analysisResultToCSV(result);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', 'competitor_analysis_result.csv');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 const CompetitorAnalysis: React.FC = () => {
   // Step management
   const [step, setStep] = useState(1);
@@ -351,51 +401,59 @@ const CompetitorAnalysis: React.FC = () => {
                 <BarChart3 size={32} className="text-accent-blue" /> Analysis Results & Recommendations
               </h2>
               {analysisResult ? (
-                <div className="w-full flex flex-col gap-8">
-                  <div className="w-full">
-                    <h3 className="font-bold text-xl text-white mb-3 flex items-center gap-2">
-                      <KeyRound size={22} className="text-accent-blue" /> Content Gaps
-                    </h3>
-                    <ul className="space-y-4">
-                      {analysisResult.content_gaps && analysisResult.content_gaps.map((gap: any, idx: number) => (
-                        <li key={idx} className="bg-gradient-to-r from-medium-blue/70 to-dark-blue rounded-xl p-5 shadow-lg border border-white/10">
-                          {typeof gap === 'string' ? (
-                            <span className="text-white/90 text-base">{gap}</span>
-                          ) : (
-                            <div>
-                              {gap.gap_type && <div className="font-bold text-accent-blue mb-1 text-lg">{gap.gap_type}</div>}
-                              {gap.explanation && <div className="mb-1 text-white/90"><span className="font-semibold">Why it matters:</span> {gap.explanation}</div>}
-                              {gap.seo_impact && <div className="text-green-400"><span className="font-semibold">SEO Impact:</span> {gap.seo_impact}</div>}
-                            </div>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
+                <>
+                  <button
+                    className="mb-4 px-6 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold shadow-lg border border-green-400/30 transition-all duration-200 self-start"
+                    onClick={() => downloadAnalysisCSV(analysisResult)}
+                  >
+                    Download CSV
+                  </button>
+                  <div className="w-full flex flex-col gap-8">
+                    <div className="w-full">
+                      <h3 className="font-bold text-xl text-white mb-3 flex items-center gap-2">
+                        <KeyRound size={22} className="text-accent-blue" /> Content Gaps
+                      </h3>
+                      <ul className="space-y-4">
+                        {analysisResult.content_gaps && analysisResult.content_gaps.map((gap: any, idx: number) => (
+                          <li key={idx} className="bg-gradient-to-r from-medium-blue/70 to-dark-blue rounded-xl p-5 shadow-lg border border-white/10">
+                            {typeof gap === 'string' ? (
+                              <span className="text-white/90 text-base">{gap}</span>
+                            ) : (
+                              <div>
+                                {gap.gap_type && <div className="font-bold text-accent-blue mb-1 text-lg">{gap.gap_type}</div>}
+                                {gap.explanation && <div className="mb-1 text-white/90"><span className="font-semibold">Why it matters:</span> {gap.explanation}</div>}
+                                {gap.seo_impact && <div className="text-green-400"><span className="font-semibold">SEO Impact:</span> {gap.seo_impact}</div>}
+                              </div>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="w-full">
+                      <h3 className="font-bold text-xl text-white mb-3 flex items-center gap-2">
+                        <Users size={22} className="text-accent-blue" /> Recommendations
+                      </h3>
+                      <ul className="space-y-4">
+                        {analysisResult.recommendations && analysisResult.recommendations.map((rec: any, idx: number) => (
+                          <li key={idx} className="bg-gradient-to-r from-medium-blue/70 to-dark-blue rounded-xl p-5 shadow-lg border border-white/10">
+                            {typeof rec === 'string' ? (
+                              <span className="text-white/90 text-base">{rec}</span>
+                            ) : (
+                              <div>
+                                {rec.title && <div className="font-bold text-accent-blue mb-1 text-lg">{rec.title}</div>}
+                                {rec.detail && <div className="text-white/90">{rec.detail}</div>}
+                                {/* Render other fields if present */}
+                                {Object.keys(rec).filter(k => k !== 'title' && k !== 'detail').map(k => (
+                                  <div key={k} className="text-white/70"><span className="font-semibold">{k}:</span> {String(rec[k])}</div>
+                                ))}
+                              </div>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
-                  <div className="w-full">
-                    <h3 className="font-bold text-xl text-white mb-3 flex items-center gap-2">
-                      <Users size={22} className="text-accent-blue" /> Recommendations
-                    </h3>
-                    <ul className="space-y-4">
-                      {analysisResult.recommendations && analysisResult.recommendations.map((rec: any, idx: number) => (
-                        <li key={idx} className="bg-gradient-to-r from-medium-blue/70 to-dark-blue rounded-xl p-5 shadow-lg border border-white/10">
-                          {typeof rec === 'string' ? (
-                            <span className="text-white/90 text-base">{rec}</span>
-                          ) : (
-                            <div>
-                              {rec.title && <div className="font-bold text-accent-blue mb-1 text-lg">{rec.title}</div>}
-                              {rec.detail && <div className="text-white/90">{rec.detail}</div>}
-                              {/* Render other fields if present */}
-                              {Object.keys(rec).filter(k => k !== 'title' && k !== 'detail').map(k => (
-                                <div key={k} className="text-white/70"><span className="font-semibold">{k}:</span> {String(rec[k])}</div>
-                              ))}
-                            </div>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
+                </>
               ) : (
                 <div className="text-white/80">No analysis result yet.</div>
               )}
