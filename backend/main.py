@@ -10,8 +10,10 @@ from endpoints.audit import router as audit_router
 from endpoints.user import router as user_router
 from endpoints.auth import router as auth_router
 from endpoints.keyword import router as keyword_router
+from endpoints.competitor_analysis import router as competitor_analysis_router
 from dotenv import load_dotenv
 import os
+import tasks.competitor_analysis_tasks
 
 # Load environment variables
 load_dotenv()
@@ -43,3 +45,4 @@ app.include_router(audit_router)
 app.include_router(user_router)
 app.include_router(auth_router)
 app.include_router(keyword_router)
+app.include_router(competitor_analysis_router)

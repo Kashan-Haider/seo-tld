@@ -1,6 +1,7 @@
 import os
 from celery import Celery
 from dotenv import load_dotenv
+import urllib.parse
 
 load_dotenv()
 
@@ -10,7 +11,7 @@ celery_app = Celery(
     "seo_agent",
     broker=REDIS_URL,
     backend=REDIS_URL,
-    include=["tasks.audit_tasks", "tasks.keyword_tasks"]
+    include=["tasks.audit_tasks", "tasks.keyword_tasks", "tasks.competitor_analysis_tasks"]
 )
 
 celery_app.conf.update(
@@ -28,6 +29,7 @@ celery_app.conf.update(
     task_routes={
         "tasks.audit_tasks.*": {"queue": "audit"},
         "tasks.keyword_tasks.*": {"queue": "keyword"},
+        "tasks.competitor_analysis_tasks.*": {"queue": "competitor_analysis"},
     },
-    task_default_queue="default",
+    task_default_queue="competitor_analysis",
 ) 

@@ -1,13 +1,14 @@
 import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSidebarStore } from '../store/sidebarStore';
-import { Home, Folder, Table, CreditCard, User, LogIn, UserPlus, KeyRound } from 'lucide-react';
+import { Home, Folder, Table, CreditCard, User, LogIn, UserPlus, KeyRound, BarChart3 } from 'lucide-react';
 
 const navItems = [
   { label: 'Dashboard', icon: <Home size={20} />, path: '/' },
   { label: 'Projects', icon: <Folder size={20} />, path: '/projects' },
   { label: 'Generate Keywords', icon: <KeyRound size={20} />, path: '/generate-keywords' },
   { label: 'Long Tail Keywords', icon: <KeyRound size={20} />, path: '/long-tail-keywords' },
+  { label: 'Competitor Analysis', icon: <BarChart3 size={20} />, path: '/competitor-analysis' },
   { label: 'Tables', icon: <Table size={20} />, path: '/' },
   { label: 'Billing', icon: <CreditCard size={20} />, path: '/' },
   { label: 'Profile', icon: <User size={20} />, path: '/' },
