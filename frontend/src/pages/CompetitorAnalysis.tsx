@@ -109,7 +109,7 @@ const CompetitorAnalysis: React.FC = () => {
       const { task_id: keywordsTaskId } = await res1.json();
       // Poll for result
       let keywordsResult = null;
-      for (let i = 0; i < 180; i++) { // up to 180s
+      for (let i = 0; i < 210; i++) { // up to 210s
         await new Promise(r => setTimeout(r, 1000));
         const pollRes = await fetch(`/api/competitor-analysis/keywords-task-status/${keywordsTaskId}`, {
           headers: {
@@ -127,20 +127,21 @@ const CompetitorAnalysis: React.FC = () => {
       if (!keywordsResult) throw new Error('Competitor keyword extraction timed out');
       setCompetitorKeywords(keywordsResult);
       // 2. Analyze content gap (async task)
+      // Pass user_url and competitor_urls for full content scraping
       const res2 = await fetch('/api/competitor-analysis/content-gap-analysis', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
-        body: JSON.stringify({ user_keywords: userKeywords, competitor_keywords_dict: keywordsResult })
+        body: JSON.stringify({ user_keywords: userKeywords, competitor_keywords_dict: keywordsResult, user_url: userUrl, competitor_urls: competitorUrls })
       });
       if (!res2.ok) throw new Error('Failed to start content gap analysis');
       const { task_id: gapTaskId } = await res2.json();
       setGapTaskId(gapTaskId);
       // Poll for result
       let gapResult = null;
-      for (let i = 0; i < 180; i++) { // up to 180s
+      for (let i = 0; i < 210; i++) { // up to 210s
         await new Promise(r => setTimeout(r, 1000));
         const pollRes = await fetch(`/api/competitor-analysis/content-gap-task-status/${gapTaskId}`, {
           headers: {
@@ -155,7 +156,12 @@ const CompetitorAnalysis: React.FC = () => {
           throw new Error('Content gap analysis failed');
         }
       }
-      if (!gapResult) throw new Error('Content gap analysis timed out');
+      // Defensive: If gapResult is empty or malformed, show fallback message and advance step
+      if (!gapResult || typeof gapResult !== 'object' || (!gapResult.content_gaps && !gapResult.recommendations)) {
+        setAnalysisResult({ content_gaps: [], recommendations: ['No analysis result returned. Please try again or check your input.'] });
+        setStep(4);
+        return;
+      }
       setAnalysisResult(gapResult);
       setStep(4);
     } catch (err: any) {
@@ -188,142 +194,158 @@ const CompetitorAnalysis: React.FC = () => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-dark-blue flex flex-col items-center py-10 px-4 md:px-20 lg:px-40">
-      <div className="w-full mx-auto flex flex-col gap-6">
+    <div className="w-full min-h-full bg-gradient-to-br from-dark-blue via-medium-blue to-dark-blue flex flex-col items-center justify-center py-10 px-2 md:px-8 lg:px-16">
+      <div className="w-full max-w-3xl mx-auto flex flex-col gap-8 items-center">
         {/* Header */}
-        <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
-          <BarChart3 size={32} className="text-accent-blue" />
-          Competitor Analysis
-        </h1>
+        <div className="flex flex-col items-center gap-2 mb-6">
+          <div className="flex items-center gap-3">
+            <BarChart3 size={40} className="text-accent-blue drop-shadow-lg" />
+            <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight drop-shadow-lg">Competitor Analysis</h1>
+          </div>
+          <p className="text-white/70 text-lg text-center max-w-xl mt-2">Analyze your website and top competitors to discover actionable content gaps and SEO opportunities. Get clear, AI-powered recommendations to boost your rankings.</p>
+        </div>
         {/* Stepper */}
-        <div className="flex items-center justify-center gap-4 mb-6">
-          {stepLabels.map((label, idx) => (
-            <div key={label} className="flex items-center gap-2">
-              <button
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg border-2 transition-all duration-200 ${
-                  step === idx + 1
-                    ? 'bg-gradient-to-br ' + accent + ' text-white border-accent-blue scale-110 shadow-lg'
-                    : 'bg-medium-blue text-white/60 border-white/20 hover:bg-accent-blue/20'
-                }`}
-                onClick={() => setStep(idx + 1)}
-                disabled={
-                  (idx === 1 && userKeywords.length === 0) ||
-                  (idx === 2 && competitorUrls.length === 0) ||
-                  (idx === 3 && !analysisResult)
-                }
+        <div className="flex items-center justify-center gap-4 mb-8">
+          {stepLabels.map((label, idx) => {
+            // Only allow navigation to steps already completed or current
+            const isClickable = idx + 1 < step || idx + 1 === step;
+            return (
+              <div
+                key={label}
+                className={`flex flex-col items-center gap-3 cursor-pointer ${isClickable ? 'hover:scale-105' : 'opacity-60 cursor-not-allowed'} transition-transform duration-200`}
+                onClick={() => {
+                  if (isClickable) setStep(idx + 1);
+                }}
+                tabIndex={isClickable ? 0 : -1}
+                role="button"
+                aria-disabled={!isClickable}
               >
-                {idx + 1}
-              </button>
-              {idx < stepLabels.length - 1 && <span className="w-8 h-1 bg-gradient-to-r from-accent-blue to-light-purple rounded" />}
-            </div>
-          ))}
+                <div className={`w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-br from-accent-blue to-light-purple shadow-lg border-2 border-white/10 ${step === idx + 1 ? 'ring-4 ring-accent-blue scale-110' : ''} transition-transform duration-200`}>
+                  {idx === 0 && <Globe size={24} className="text-white" />}
+                  {idx === 1 && <KeyRound size={24} className="text-white" />}
+                  {idx === 2 && <Users size={24} className="text-white" />}
+                  {idx === 3 && <BarChart3 size={24} className="text-white" />}
+                </div>
+                <span className={`text-xs font-semibold mt-1 ${step === idx + 1 ? 'text-accent-blue' : 'text-white/60'}`}>{label}</span>
+              </div>
+            );
+          })}
         </div>
         {/* Card Container */}
-        <div className="bg-gradient-to-br from-dark-blue via-medium-blue to-dark-blue rounded-2xl shadow-xl border border-white/10 p-8 flex flex-col gap-4 w-full max-w-2xl mx-auto">
+        <div className="w-full bg-gradient-to-br from-dark-blue via-medium-blue to-dark-blue rounded-2xl shadow-2xl border border-white/10 p-8 flex flex-col gap-8 items-center">
+          {/* Step 1: User URL */}
           {step === 1 && (
-            <div>
-              <label className="text-white/80 font-semibold text-lg flex items-center gap-2">
-                <Globe size={20} className="text-accent-blue" />
+            <div className="w-full flex flex-col items-center gap-6">
+              <label className="text-white/90 font-bold text-2xl flex items-center gap-3">
+                <Globe size={28} className="text-accent-blue" />
                 Enter your website URL
               </label>
               <input
                 type="text"
-                className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-medium-blue/80 to-medium-blue text-white border border-white/10 focus:outline-none focus:border-accent-blue focus:ring-2 focus:ring-accent-blue/20 transition-all duration-300 text-base backdrop-blur-sm mt-2"
+                className="w-full max-w-md px-6 py-4 rounded-xl bg-gradient-to-r from-dark-blue/80 to-medium-blue text-white border border-white/10 focus:outline-none focus:border-accent-blue focus:ring-2 focus:ring-accent-blue/20 transition-all duration-300 text-lg backdrop-blur-sm shadow-lg"
                 value={userUrl}
                 onChange={e => setUserUrl(e.target.value)}
                 placeholder="https://yourwebsite.com"
                 disabled={keywordsLoading}
               />
               <button
-                className="mt-4 w-full h-12 px-6 rounded-xl bg-gradient-to-r from-accent-blue via-light-purple to-accent-blue text-white font-bold shadow-lg hover:shadow-accent-blue/30 hover:scale-[1.02] transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100 flex items-center justify-center gap-3"
+                className="w-full max-w-md h-14 px-6 rounded-xl bg-gradient-to-r from-accent-blue via-light-purple to-accent-blue text-white font-bold shadow-lg hover:shadow-accent-blue/30 hover:scale-105 transition-all duration-300 text-lg flex items-center justify-center gap-3"
                 onClick={handleExtractKeywords}
                 disabled={keywordsLoading || !userUrl.trim() || !userUrl.startsWith('http')}
               >
-                <KeyRound size={22} />
+                <KeyRound size={26} />
                 {keywordsLoading ? 'Extracting...' : 'Extract Keywords'}
               </button>
-              {keywordsError && <div className="text-red-400 text-sm mt-2">{keywordsError}</div>}
+              {keywordsError && <div className="text-red-400 text-base mt-2">{keywordsError}</div>}
+              <div className="mt-2 text-white/70 text-sm text-center">Paste your homepage or main service page URL to get started. We’ll analyze your site and extract the most relevant keywords for your business.</div>
             </div>
           )}
+          {/* Step 2: Keywords */}
           {step === 2 && (
-            <div>
-              <label className="text-white/80 font-semibold text-lg flex items-center gap-2">
-                <KeyRound size={20} className="text-accent-blue" />
+            <div className="w-full flex flex-col items-center gap-6">
+              <label className="text-white/90 font-bold text-2xl flex items-center gap-3">
+                <KeyRound size={28} className="text-accent-blue" />
                 Edit your keywords (max 5)
               </label>
-              <div className="space-y-2 mt-2">
+              <div className="space-y-3 w-full max-w-md">
                 {userKeywords.map((kw, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
+                  <div key={idx} className="flex items-center gap-3">
                     <input
                       type="text"
-                      className="w-full px-4 py-2 rounded-lg bg-medium-blue/80 text-white border border-white/10 focus:outline-none focus:border-accent-blue text-base"
+                      className="w-full px-5 py-3 rounded-lg bg-dark-blue/80 text-white border border-white/10 focus:outline-none focus:border-accent-blue text-lg shadow"
                       value={kw}
                       onChange={e => handleKeywordChange(idx, e.target.value)}
                     />
-                    <button className="px-2 py-1 bg-red-500 text-white rounded-lg" onClick={() => handleRemoveKeyword(idx)} disabled={userKeywords.length <= 1}>Remove</button>
+                    <button className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition" onClick={() => handleRemoveKeyword(idx)} disabled={userKeywords.length <= 1}>Remove</button>
                   </div>
                 ))}
-                <button className="mt-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg" onClick={handleAddKeyword} disabled={userKeywords.length >= MAX_KEYWORDS}>Add Keyword</button>
+                <button className="mt-2 w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-lg transition" onClick={handleAddKeyword} disabled={userKeywords.length >= MAX_KEYWORDS}>Add Keyword</button>
               </div>
               <button
-                className="mt-4 w-full h-12 px-6 rounded-xl bg-gradient-to-r from-accent-blue via-light-purple to-accent-blue text-white font-bold shadow-lg hover:shadow-accent-blue/30 hover:scale-[1.02] transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100 flex items-center justify-center gap-3"
+                className="w-full max-w-md h-14 px-6 rounded-xl bg-gradient-to-r from-accent-blue via-light-purple to-accent-blue text-white font-bold shadow-lg hover:shadow-accent-blue/30 hover:scale-105 transition-all duration-300 text-lg flex items-center justify-center gap-3"
                 onClick={handleFindCompetitors}
                 disabled={competitorsLoading || userKeywords.length === 0}
               >
-                <Users size={22} />
+                <Users size={26} />
                 {competitorsLoading ? 'Finding...' : 'Find Competitors'}
               </button>
-              {competitorsError && <div className="text-red-400 text-sm mt-2">{competitorsError}</div>}
+              {competitorsError && <div className="text-red-400 text-base mt-2">{competitorsError}</div>}
+              <div className="mt-2 text-white/70 text-sm text-center">Edit or add keywords to better match your business focus. These will be used to find your top competitors.</div>
             </div>
           )}
+          {/* Step 3: Competitor URLs */}
           {step === 3 && (
-            <div>
-              <label className="text-white/80 font-semibold text-lg flex items-center gap-2">
-                <BarChart3 size={20} className="text-accent-blue" />
+            <div className="w-full flex flex-col items-center gap-6">
+              <label className="text-white/90 font-bold text-2xl flex items-center gap-3">
+                <Users size={28} className="text-accent-blue" />
                 Edit competitor URLs (max 10)
               </label>
-              <div className="space-y-2 mt-2">
+              <div className="space-y-3 w-full max-w-md">
                 {competitorUrls.map((url, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
+                  <div key={idx} className="flex items-center gap-3">
                     <input
                       type="text"
-                      className="w-full px-4 py-2 rounded-lg bg-medium-blue/80 text-white border border-white/10 focus:outline-none focus:border-accent-blue text-base"
+                      className="w-full px-5 py-3 rounded-lg bg-dark-blue/80 text-white border border-white/10 focus:outline-none focus:border-accent-blue text-lg shadow"
                       value={url}
                       onChange={e => handleCompetitorUrlChange(idx, e.target.value)}
                     />
-                    <button className="px-2 py-1 bg-red-500 text-white rounded-lg" onClick={() => handleRemoveCompetitorUrl(idx)} disabled={competitorUrls.length <= 1}>Remove</button>
+                    <button className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition" onClick={() => handleRemoveCompetitorUrl(idx)} disabled={competitorUrls.length <= 1}>Remove</button>
                   </div>
                 ))}
-                <button className="mt-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg" onClick={handleAddCompetitorUrl} disabled={competitorUrls.length >= MAX_COMPETITORS}>Add Competitor</button>
+                <button className="mt-2 w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-lg transition" onClick={handleAddCompetitorUrl} disabled={competitorUrls.length >= MAX_COMPETITORS}>Add Competitor</button>
               </div>
               <button
-                className="mt-4 w-full h-12 px-6 rounded-xl bg-gradient-to-r from-accent-blue via-light-purple to-accent-blue text-white font-bold shadow-lg hover:shadow-accent-blue/30 hover:scale-[1.02] transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100 flex items-center justify-center gap-3"
+                className="w-full max-w-md h-14 px-6 rounded-xl bg-gradient-to-r from-accent-blue via-light-purple to-accent-blue text-white font-bold shadow-lg hover:shadow-accent-blue/30 hover:scale-105 transition-all duration-300 text-lg flex items-center justify-center gap-3"
                 onClick={handleAnalyze}
                 disabled={gapLoading || competitorUrls.length === 0}
               >
-                <BarChart3 size={22} />
+                <BarChart3 size={26} />
                 {gapLoading ? 'Analyzing...' : 'Analyze'}
               </button>
-              {gapError && <div className="text-red-400 text-sm mt-2">{gapError}</div>}
+              {gapError && <div className="text-red-400 text-base mt-2">{gapError}</div>}
+              <div className="mt-2 text-white/70 text-sm text-center">Review and adjust competitor URLs. These sites will be analyzed for keyword and content gaps.</div>
             </div>
           )}
+          {/* Step 4: Results */}
           {step === 4 && (
-            <div>
-              <h2 className="text-xl font-bold mb-4 text-accent-blue flex items-center gap-2">
-                <BarChart3 size={24} /> Analysis Results & Recommendations
+            <div className="w-full flex flex-col items-center gap-8">
+              <h2 className="text-2xl md:text-3xl font-extrabold mb-4 text-accent-blue flex items-center gap-3">
+                <BarChart3 size={32} className="text-accent-blue" /> Analysis Results & Recommendations
               </h2>
               {analysisResult ? (
-                <div>
-                  <div className="mb-4">
-                    <h3 className="font-semibold text-white mb-2">Content Gaps:</h3>
-                    <ul className="list-disc ml-6 text-white/90">
+                <div className="w-full flex flex-col gap-8">
+                  <div className="w-full">
+                    <h3 className="font-bold text-xl text-white mb-3 flex items-center gap-2">
+                      <KeyRound size={22} className="text-accent-blue" /> Content Gaps
+                    </h3>
+                    <ul className="space-y-4">
                       {analysisResult.content_gaps && analysisResult.content_gaps.map((gap: any, idx: number) => (
-                        <li key={idx} className="mb-3">
+                        <li key={idx} className="bg-gradient-to-r from-medium-blue/70 to-dark-blue rounded-xl p-5 shadow-lg border border-white/10">
                           {typeof gap === 'string' ? (
-                            gap
+                            <span className="text-white/90 text-base">{gap}</span>
                           ) : (
-                            <div className="bg-medium-blue/60 rounded-lg p-3">
-                              {gap.gap_type && <div className="font-bold text-accent-blue mb-1">{gap.gap_type}</div>}
+                            <div>
+                              {gap.gap_type && <div className="font-bold text-accent-blue mb-1 text-lg">{gap.gap_type}</div>}
                               {gap.explanation && <div className="mb-1 text-white/90"><span className="font-semibold">Why it matters:</span> {gap.explanation}</div>}
                               {gap.seo_impact && <div className="text-green-400"><span className="font-semibold">SEO Impact:</span> {gap.seo_impact}</div>}
                             </div>
@@ -332,16 +354,18 @@ const CompetitorAnalysis: React.FC = () => {
                       ))}
                     </ul>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-white mb-2">Recommendations:</h3>
-                    <ul className="list-disc ml-6 text-white/90">
+                  <div className="w-full">
+                    <h3 className="font-bold text-xl text-white mb-3 flex items-center gap-2">
+                      <Users size={22} className="text-accent-blue" /> Recommendations
+                    </h3>
+                    <ul className="space-y-4">
                       {analysisResult.recommendations && analysisResult.recommendations.map((rec: any, idx: number) => (
-                        <li key={idx} className="mb-2">
+                        <li key={idx} className="bg-gradient-to-r from-medium-blue/70 to-dark-blue rounded-xl p-5 shadow-lg border border-white/10">
                           {typeof rec === 'string' ? (
-                            rec
+                            <span className="text-white/90 text-base">{rec}</span>
                           ) : (
-                            <div className="bg-medium-blue/60 rounded-lg p-3">
-                              {rec.title && <div className="font-bold text-accent-blue mb-1">{rec.title}</div>}
+                            <div>
+                              {rec.title && <div className="font-bold text-accent-blue mb-1 text-lg">{rec.title}</div>}
                               {rec.detail && <div className="text-white/90">{rec.detail}</div>}
                               {/* Render other fields if present */}
                               {Object.keys(rec).filter(k => k !== 'title' && k !== 'detail').map(k => (
@@ -357,6 +381,14 @@ const CompetitorAnalysis: React.FC = () => {
               ) : (
                 <div className="text-white/80">No analysis result yet.</div>
               )}
+              <div className="flex flex-col md:flex-row gap-4 mt-8 w-full">
+                <button
+                  className="w-full md:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-accent-blue via-light-purple to-accent-blue text-white font-bold shadow-lg hover:shadow-accent-blue/30 hover:scale-105 transition-all duration-300 text-lg flex items-center justify-center gap-3"
+                  onClick={() => setStep(1)}
+                >
+                  <Globe size={22} /> Start New Analysis
+                </button>
+              </div>
             </div>
           )}
         </div>
