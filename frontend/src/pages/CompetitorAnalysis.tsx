@@ -109,7 +109,7 @@ const CompetitorAnalysis: React.FC = () => {
       const { task_id: keywordsTaskId } = await res1.json();
       // Poll for result
       let keywordsResult = null;
-      for (let i = 0; i < 60; i++) { // up to 60s
+      for (let i = 0; i < 180; i++) { // up to 180s
         await new Promise(r => setTimeout(r, 1000));
         const pollRes = await fetch(`/api/competitor-analysis/keywords-task-status/${keywordsTaskId}`, {
           headers: {
@@ -140,7 +140,7 @@ const CompetitorAnalysis: React.FC = () => {
       setGapTaskId(gapTaskId);
       // Poll for result
       let gapResult = null;
-      for (let i = 0; i < 60; i++) { // up to 60s
+      for (let i = 0; i < 180; i++) { // up to 180s
         await new Promise(r => setTimeout(r, 1000));
         const pollRes = await fetch(`/api/competitor-analysis/content-gap-task-status/${gapTaskId}`, {
           headers: {
@@ -317,16 +317,39 @@ const CompetitorAnalysis: React.FC = () => {
                   <div className="mb-4">
                     <h3 className="font-semibold text-white mb-2">Content Gaps:</h3>
                     <ul className="list-disc ml-6 text-white/90">
-                      {analysisResult.content_gaps && analysisResult.content_gaps.map((gap: string, idx: number) => (
-                        <li key={idx}>{gap}</li>
+                      {analysisResult.content_gaps && analysisResult.content_gaps.map((gap: any, idx: number) => (
+                        <li key={idx} className="mb-3">
+                          {typeof gap === 'string' ? (
+                            gap
+                          ) : (
+                            <div className="bg-medium-blue/60 rounded-lg p-3">
+                              {gap.gap_type && <div className="font-bold text-accent-blue mb-1">{gap.gap_type}</div>}
+                              {gap.explanation && <div className="mb-1 text-white/90"><span className="font-semibold">Why it matters:</span> {gap.explanation}</div>}
+                              {gap.seo_impact && <div className="text-green-400"><span className="font-semibold">SEO Impact:</span> {gap.seo_impact}</div>}
+                            </div>
+                          )}
+                        </li>
                       ))}
                     </ul>
                   </div>
                   <div>
                     <h3 className="font-semibold text-white mb-2">Recommendations:</h3>
                     <ul className="list-disc ml-6 text-white/90">
-                      {analysisResult.recommendations && analysisResult.recommendations.map((rec: string, idx: number) => (
-                        <li key={idx}>{rec}</li>
+                      {analysisResult.recommendations && analysisResult.recommendations.map((rec: any, idx: number) => (
+                        <li key={idx} className="mb-2">
+                          {typeof rec === 'string' ? (
+                            rec
+                          ) : (
+                            <div className="bg-medium-blue/60 rounded-lg p-3">
+                              {rec.title && <div className="font-bold text-accent-blue mb-1">{rec.title}</div>}
+                              {rec.detail && <div className="text-white/90">{rec.detail}</div>}
+                              {/* Render other fields if present */}
+                              {Object.keys(rec).filter(k => k !== 'title' && k !== 'detail').map(k => (
+                                <div key={k} className="text-white/70"><span className="font-semibold">{k}:</span> {String(rec[k])}</div>
+                              ))}
+                            </div>
+                          )}
+                        </li>
                       ))}
                     </ul>
                   </div>

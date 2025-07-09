@@ -51,7 +51,7 @@ class CompetitorAnalysisService:
     @staticmethod
     async def extract_keywords_from_url(url, max_keywords=5):
         try:
-            response = requests.get(url, timeout=10)
+            response = requests.get(url, timeout=150)
             response.raise_for_status()
             soup = BeautifulSoup(response.text, 'html.parser')
             # Extract visible text
@@ -129,10 +129,12 @@ class CompetitorAnalysisService:
             return []
 
     @staticmethod
-    def analyze_content_gap_and_recommend(user_keywords, competitor_keywords_dict):
+    def analyze_content_gap_and_recommend(user_keywords, competitor_keywords_dict, user_url=None, competitor_urls=None):
         """
         user_keywords: list of str
         competitor_keywords_dict: dict of {url: [keywords]}
+        user_url: str (optional, for scraping user content)
+        competitor_urls: list of str (optional, for scraping competitor content)
         Returns: dict with 'content_gaps' and 'recommendations'
         """
         api_key = os.getenv('GOOGLE_API_KEY')
@@ -140,28 +142,72 @@ class CompetitorAnalysisService:
             return {"content_gaps": [], "recommendations": ["GOOGLE_API_KEY not found, cannot run LLM workflow."]}
         llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
 
+        # Helper to scrape and summarize content
+        def scrape_content(url):
+            try:
+                resp = requests.get(url, timeout=150)
+                resp.raise_for_status()
+                soup = BeautifulSoup(resp.text, 'html.parser')
+                title = soup.title.string if soup.title else ''
+                meta_desc = ''
+                meta = soup.find('meta', attrs={'name': 'description'})
+                if isinstance(meta, Tag):
+                    meta_desc = meta.get('content', '')
+                h1_tags = ' '.join([h1.get_text(strip=True) for h1 in soup.find_all('h1')])
+                h2_tags = ' '.join([h2.get_text(strip=True) for h2 in soup.find_all('h2')])
+                text = ' '.join([t for t in soup.stripped_strings])
+                return {
+                    "title": title,
+                    "meta_desc": meta_desc,
+                    "h1_tags": h1_tags,
+                    "h2_tags": h2_tags,
+                    "text": text[:3000]  # limit to 3000 chars for LLM
+                }
+            except Exception:
+                return {"title": "", "meta_desc": "", "h1_tags": "", "h2_tags": "", "text": ""}
+
+        # Scrape user and competitor content if URLs provided
+        user_content = scrape_content(user_url) if user_url else {"title": "", "meta_desc": "", "h1_tags": "", "h2_tags": "", "text": ""}
+        competitor_contents = {}
+        if competitor_urls:
+            for url in competitor_urls:
+                competitor_contents[url] = scrape_content(url)
+        else:
+            competitor_contents = {url: {"title": "", "meta_desc": "", "h1_tags": "", "h2_tags": "", "text": ""} for url in competitor_keywords_dict.keys()}
+
         # Flatten competitor keywords
         competitor_keywords = set()
         for kws in competitor_keywords_dict.values():
             competitor_keywords.update(kws)
         competitor_keywords = list(competitor_keywords)
 
+        # Prepare competitor content summary
+        competitor_content_summary = "\n\n".join([
+            f"URL: {url}\nTitle: {c['title']}\nMeta: {c['meta_desc']}\nH1: {c['h1_tags']}\nH2: {c['h2_tags']}\nText: {c['text']}" for url, c in competitor_contents.items()
+        ])
+
         # Prompt for content gap analysis
         content_gap_prompt = ChatPromptTemplate.from_messages([
             ("system", "You are an expert SEO strategist and content gap analyst."),
             ("user", (
-                "Given the following user's keywords and competitor keywords, identify the most important content gaps (keywords/topics the user is missing but competitors have).\n"
-                "Then, provide actionable recommendations for the user to improve their content and SEO.\n"
-                "User keywords: {user_keywords}\n"
-                "Competitor keywords: {competitor_keywords}\n"
-                "Output a JSON object with two fields: 'content_gaps' (list of missing keywords/topics) and 'recommendations' (list of actionable recommendations).\n"
-                "Do not include explanations or extra text."
+                "Given the following user's website content and keywords, and the content and keywords of their competitors, perform a detailed content gap analysis.\n"
+                "1. Identify the most important content gaps (topics, keywords, or sections the user is missing but competitors have).\n"
+                "2. For each gap, explain why it matters and how it can help the user's SEO.\n"
+                "3. Provide a very detailed, actionable set of recommendations for the user to improve their content and SEO, referencing both the user's and competitors' content.\n"
+                "User URL: {user_url}\nUser Title: {user_title}\nUser Meta: {user_meta}\nUser H1: {user_h1}\nUser H2: {user_h2}\nUser Text: {user_text}\nUser Keywords: {user_keywords}\n\nCompetitor Content:\n{competitor_content_summary}\n\nCompetitor Keywords: {competitor_keywords}\n\nOutput a JSON object with two fields: 'content_gaps' (a list of detailed gap descriptions) and 'recommendations' (a list of detailed, actionable recommendations). Do not include explanations or extra text."
             ))
         ])
         chain = content_gap_prompt | llm | RunnableLambda(lambda x: x.content)
         result = chain.invoke({
-            "user_keywords": ", ".join(user_keywords),
-            "competitor_keywords": ", ".join(competitor_keywords)
+            "user_url": user_url or "",
+            "user_title": user_content["title"],
+            "user_meta": user_content["meta_desc"],
+            "user_h1": user_content["h1_tags"],
+            "user_h2": user_content["h2_tags"],
+            "user_text": user_content["text"],
+            "user_keywords": ', '.join(user_keywords),
+            "competitor_content_summary": competitor_content_summary,
+            "competitor_keywords": ', '.join(competitor_keywords)
         })
         import json, re
         try:
