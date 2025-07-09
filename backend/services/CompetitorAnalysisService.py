@@ -12,6 +12,9 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableLambda
 from bs4.element import Tag
 import urllib.parse
+from db.models.competitorAnalysis import CompetitorAnalysis
+from db.models.Schemas import CompetitorAnalysisCreate
+from sqlalchemy.orm import Session
 
 class CompetitorAnalysisService:
     @staticmethod
@@ -216,4 +219,20 @@ class CompetitorAnalysisService:
                 return json.loads(match.group(0))
             return json.loads(result)
         except Exception:
-            return {"content_gaps": [], "recommendations": ["Could not parse LLM output", str(result)]} 
+            return {"content_gaps": [], "recommendations": ["Could not parse LLM output", str(result)]}
+
+    @staticmethod
+    def save_analysis(analysis_data: CompetitorAnalysisCreate, db: Session):
+        obj = CompetitorAnalysis(
+            project_id=analysis_data.project_id,
+            user_url=analysis_data.user_url,
+            competitor_urls=analysis_data.competitor_urls,
+            competitor_keywords=analysis_data.competitor_keywords,
+            content_gaps=analysis_data.content_gaps,
+            recommendations=analysis_data.recommendations,
+            analysis_type=analysis_data.analysis_type
+        )
+        db.add(obj)
+        db.commit()
+        db.refresh(obj)
+        return obj 

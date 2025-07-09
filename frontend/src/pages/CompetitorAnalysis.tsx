@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { BarChart3, Globe, KeyRound, Users } from 'lucide-react';
+import { BarChart3, Globe, KeyRound, Users, Save, Folder } from 'lucide-react';
 import CompetitorKeywordLoadingScreen from '../components/competitor-analysis/CompetitorKeywordLoadingScreen';
 import ContentGapLoadingScreen from '../components/competitor-analysis/ContentGapLoadingScreen';
+import { useProjectStore } from '../store/projectStore';
+import { toast } from 'react-hot-toast';
+import { Link } from 'react-router-dom';
 
 const MAX_KEYWORDS = 5;
 const MAX_COMPETITORS = 10;
@@ -87,6 +90,8 @@ const CompetitorAnalysis: React.FC = () => {
   const [gapError, setGapError] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [loadingScreen, setLoadingScreen] = useState<null | { type: 'competitor' | 'gap', progress: number, message: string }>(null);
+  const { selectedProject } = useProjectStore();
+  const [saving, setSaving] = useState(false);
 
   // Step 1: Extract keywords from user URL
   const handleExtractKeywords = async () => {
@@ -147,7 +152,7 @@ const CompetitorAnalysis: React.FC = () => {
     setGapLoading(true);
     setGapError(null);
     setAnalysisResult(null);
-    setLoadingScreen({ type: 'competitor', progress: 0, message: 'Extracting competitor keywords...' });
+    setLoadingScreen({ type: 'competitor', progress: 0, message: `Extracting competitor keywords for ${competitorUrls.length} competitors... (0s)` });
     try {
       const token = localStorage.getItem('access_token');
       // 1. Extract competitor keywords (async task)
@@ -164,7 +169,7 @@ const CompetitorAnalysis: React.FC = () => {
       // Poll for result
       let keywordsResult = null;
       for (let i = 0; i < 210; i++) { // up to 210s
-        setLoadingScreen({ type: 'competitor', progress: Math.round((i / 210) * 100), message: `Extracting competitor keywords... (${i + 1}s)` });
+        setLoadingScreen({ type: 'competitor', progress: Math.round((i / 210) * 100), message: `Extracting competitor keywords for ${competitorUrls.length} competitors... (${i + 1}s)` });
         await new Promise(r => setTimeout(r, 1000));
         const pollRes = await fetch(`/api/competitor-analysis/keywords-task-status/${keywordsTaskId}`, {
           headers: {
@@ -229,6 +234,41 @@ const CompetitorAnalysis: React.FC = () => {
     }
   };
 
+  // Save analysis handler
+  const handleSaveAnalysis = async () => {
+    if (!selectedProject || !analysisResult) return;
+    setSaving(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const payload = {
+        project_id: selectedProject.id,
+        user_url: userUrl,
+        competitor_urls: competitorUrls,
+        competitor_keywords: competitorKeywords,
+        content_gaps: analysisResult.content_gaps,
+        recommendations: analysisResult.recommendations,
+        analysis_type: 'full',
+      };
+      const res = await fetch('/api/competitor-analysis/save-analysis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.detail || 'Failed to save analysis');
+      }
+      toast.success('Analysis saved successfully!');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save analysis');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Editable keyword list
   const handleKeywordChange = (idx: number, value: string) => {
     setUserKeywords(keywords => keywords.map((k, i) => i === idx ? value : k));
@@ -265,13 +305,21 @@ const CompetitorAnalysis: React.FC = () => {
       )}
       <div className="w-full max-w-3xl mx-auto flex flex-col gap-8 items-center">
         {/* Header */}
-        <div className="flex flex-col items-center gap-2 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full gap-2 mb-6 relative">
           <div className="flex items-center gap-3">
             <BarChart3 size={40} className="text-accent-blue drop-shadow-lg" />
             <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight drop-shadow-lg">Competitor Analysis</h1>
           </div>
-          <p className="text-white/70 text-lg text-center max-w-xl mt-2">Analyze your website and top competitors to discover actionable content gaps and SEO opportunities. Get clear, AI-powered recommendations to boost your rankings.</p>
+          <Link
+            to="/saved-analyses"
+            className="flex items-center gap-3 px-6 py-3 rounded-xl bg-gradient-to-r from-accent-blue via-light-purple to-accent-blue text-white font-bold shadow-lg border border-accent-blue/30 hover:from-light-purple hover:to-accent-blue hover:scale-105 transition-all duration-200 text-lg mt-4 sm:mt-0 whitespace-nowrap"
+            style={{ minWidth: '220px', justifyContent: 'center' }}
+          >
+            <Folder size={24} className="text-white" />
+            View Saved Analyses
+          </Link>
         </div>
+        <p className="text-white/70 text-lg text-center max-w-xl mt-2 mb-2">Analyze your website and top competitors to discover actionable content gaps and SEO opportunities. Get clear, AI-powered recommendations to boost your rankings.</p>
         {/* Stepper */}
         <div className="flex items-center justify-center gap-4 mb-8">
           {stepLabels.map((label, idx) => {
@@ -400,14 +448,50 @@ const CompetitorAnalysis: React.FC = () => {
               <h2 className="text-2xl md:text-3xl font-extrabold mb-4 text-accent-blue flex items-center gap-3">
                 <BarChart3 size={32} className="text-accent-blue" /> Analysis Results & Recommendations
               </h2>
+              {/* Competitor Keywords Section */}
+              <div className="w-full mb-6">
+                <h3 className="font-bold text-xl text-white mb-3 flex items-center gap-2">
+                  <Users size={22} className="text-accent-blue" /> Competitor Keywords
+                </h3>
+                {competitorUrls.length === 0 || Object.keys(competitorKeywords).length === 0 ? (
+                  <div className="text-white/70 italic">No competitor keywords found.</div>
+                ) : (
+                  <div className="space-y-6">
+                    {competitorUrls.map((url, idx) => (
+                      <div key={url} className="bg-gradient-to-r from-medium-blue/60 to-dark-blue rounded-xl p-4 shadow border border-white/10">
+                        <div className="text-accent-blue font-semibold mb-2 break-all">{url}</div>
+                        {competitorKeywords[url] && competitorKeywords[url].length > 0 ? (
+                          <ul className="flex flex-wrap gap-2">
+                            {competitorKeywords[url].map((kw, i) => (
+                              <li key={i} className="bg-accent-blue/20 text-accent-blue px-3 py-1 rounded-lg text-sm font-medium shadow-sm">{kw}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <div className="text-white/60 italic">No keywords extracted.</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               {analysisResult ? (
                 <>
-                  <button
-                    className="mb-4 px-6 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold shadow-lg border border-green-400/30 transition-all duration-200 self-start"
-                    onClick={() => downloadAnalysisCSV(analysisResult)}
-                  >
-                    Download CSV
-                  </button>
+                  <div className="flex flex-row gap-4 mb-4">
+                    <button
+                      className="px-6 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold shadow-lg border border-green-400/30 transition-all duration-200 flex items-center gap-2"
+                      onClick={() => downloadAnalysisCSV(analysisResult)}
+                    >
+                      Download CSV
+                    </button>
+                    <button
+                      className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg border border-blue-400/30 transition-all duration-200 flex items-center gap-2 disabled:opacity-60"
+                      onClick={handleSaveAnalysis}
+                      disabled={saving || !analysisResult}
+                    >
+                      <Save size={20} />
+                      {saving ? 'Saving...' : 'Save Analysis'}
+                    </button>
+                  </div>
                   <div className="w-full flex flex-col gap-8">
                     <div className="w-full">
                       <h3 className="font-bold text-xl text-white mb-3 flex items-center gap-2">
@@ -416,7 +500,12 @@ const CompetitorAnalysis: React.FC = () => {
                       <ul className="space-y-4">
                         {analysisResult.content_gaps && analysisResult.content_gaps.map((gap: any, idx: number) => (
                           <li key={idx} className="bg-gradient-to-r from-medium-blue/70 to-dark-blue rounded-xl p-5 shadow-lg border border-white/10">
-                            {typeof gap === 'string' ? (
+                            {gap && typeof gap === 'object' && gap.title && gap.description ? (
+                              <div>
+                                <div className="font-bold text-accent-blue mb-1 text-lg">{gap.title}</div>
+                                <div className="text-white/90">{gap.description}</div>
+                              </div>
+                            ) : typeof gap === 'string' ? (
                               <span className="text-white/90 text-base">{gap}</span>
                             ) : (
                               <div>

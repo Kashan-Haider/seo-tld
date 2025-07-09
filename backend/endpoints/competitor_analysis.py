@@ -10,6 +10,8 @@ from tasks.competitor_analysis_tasks import scrape_competitor_keywords
 from celery.result import AsyncResult
 from tasks.competitor_analysis_tasks import analyze_content_gap_task
 import logging
+from db.models.Schemas import CompetitorAnalysisCreate, CompetitorAnalysisResponse
+from db.models.competitorAnalysis import CompetitorAnalysis
 
 router = APIRouter(prefix="/competitor-analysis", tags=["competitor-analysis"])
 
@@ -104,4 +106,44 @@ async def extract_keywords(
         return {"keywords": keywords}
     except Exception as e:
         logging.error(f"Error in extract-keywords: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/save-analysis", response_model=CompetitorAnalysisResponse)
+async def save_competitor_analysis(
+    analysis: CompetitorAnalysisCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        obj = CompetitorAnalysisService.save_analysis(analysis, db)
+        return obj
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/all", response_model=List[CompetitorAnalysisResponse])
+async def get_all_analyses(
+    project_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        analyses = db.query(CompetitorAnalysis).filter(CompetitorAnalysis.project_id == project_id).order_by(CompetitorAnalysis.created_at.desc()).all()
+        return analyses
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/delete-analysis/{analysis_id}")
+async def delete_competitor_analysis(
+    analysis_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        obj = db.query(CompetitorAnalysis).filter(CompetitorAnalysis.id == analysis_id).first()
+        if not obj:
+            raise HTTPException(status_code=404, detail="Analysis not found")
+        db.delete(obj)
+        db.commit()
+        return {"detail": "Analysis deleted successfully"}
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) 

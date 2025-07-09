@@ -19,6 +19,7 @@ import LongTailKeywords from './pages/LongTailKeywords';
 import GenerateKeywords from './pages/GenerateKeywords';
 import SavedKeywords from './pages/SavedKeywords';
 import CompetitorAnalysis from './pages/CompetitorAnalysis';
+import SavedAnalyses from './pages/SavedAnalyses';
 import type { AuthContextType } from './typing';
 
 
@@ -252,6 +253,7 @@ const App = () => {
             <Route path="/generate-keywords" element={<GenerateKeywords />} />
             <Route path="/saved-keywords" element={<SavedKeywords />} />
             <Route path="/competitor-analysis" element={<CompetitorAnalysis />} />
+            <Route path="/saved-analyses" element={<SavedAnalyses />} />
             <Route path="/project/:id" element={<div>Project Details Page (Coming Soon)</div>} />
             <Route path="/audit/:auditId/opportunities" element={<Opportunities />} />
             <Route path="/audit/:auditId/diagnostics" element={<Diagnostics />} />

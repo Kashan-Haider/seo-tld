@@ -1,6 +1,6 @@
 # models/schemas.py
 from pydantic import BaseModel, EmailStr
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from datetime import datetime
 
 # User Schemas
@@ -39,6 +39,27 @@ class ProjectResponse(ProjectBase):
     class Config:
         from_attributes = True
 
+# Competitor Analysis Schemas (new, full analysis)
+class CompetitorAnalysisBase(BaseModel):
+    user_url: str
+    competitor_urls: List[str]
+    competitor_keywords: Dict[str, List[str]]
+    content_gaps: List[Any]
+    recommendations: List[Any]
+    analysis_type: str = "full"
+    project_id: str
+
+class CompetitorAnalysisCreate(CompetitorAnalysisBase):
+    pass
+
+class CompetitorAnalysisResponse(CompetitorAnalysisBase):
+    id: str
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True
+
 # Keyword Schemas
 class KeywordBase(BaseModel):
     id: Optional[str] = None
@@ -53,28 +74,6 @@ class KeywordCreate(KeywordBase):
     pass
 
 class KeywordResponse(KeywordBase):
-    class Config:
-        from_attributes = True
-
-# Competitor Analysis Schemas
-class CompetitorAnalysisBase(BaseModel):
-    competitor_name: str
-    competitor_url: str
-    analysis_type: str
-
-class CompetitorAnalysisCreate(CompetitorAnalysisBase):
-    project_id: int
-
-class CompetitorAnalysisResponse(CompetitorAnalysisBase):
-    id: int
-    project_id: int
-    domain_authority: Optional[float] = None
-    organic_keywords: Optional[int] = None
-    organic_traffic: Optional[int] = None
-    analysis_data: Optional[Dict] = None
-    keyword_overlap_score: Optional[float] = None
-    created_at: datetime
-    
     class Config:
         from_attributes = True
 
