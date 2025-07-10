@@ -16,6 +16,7 @@ const AuthCallback: React.FC = () => {
         console.log('Search params:', Object.fromEntries(searchParams.entries()));
         
         const token = searchParams.get('token');
+        const refreshToken = searchParams.get('refresh_token');
         const errorParam = searchParams.get('error');
         const errorMessage = searchParams.get('message');
         
@@ -26,26 +27,32 @@ const AuthCallback: React.FC = () => {
           return;
         }
         
-        if (token) {
-          console.log('Token received, logging in...');
-          
+        if (token && refreshToken) {
+          console.log('Tokens received, logging in...');
           // Validate token format
+          if (token.split('.').length !== 3 || refreshToken.length < 10) {
+            console.error('Invalid token or refresh token format');
+            setError('Invalid token or refresh token format received');
+            setIsProcessing(false);
+            return;
+          }
+          // Store both tokens and redirect to dashboard
+          await login(token, refreshToken);
+          console.log('Login successful, redirecting to dashboard...');
+          setTimeout(() => {
+            navigate('/dashboard', { replace: true });
+          }, 100);
+        } else if (token) {
+          // Fallback: only access token present (legacy)
           if (token.split('.').length !== 3) {
-            console.error('Invalid token format');
             setError('Invalid token format received');
             setIsProcessing(false);
             return;
           }
-          
-          // Store the token and redirect to dashboard
           await login(token);
-          console.log('Login successful, redirecting to dashboard...');
-          
-          // Small delay to ensure login state is updated
           setTimeout(() => {
             navigate('/dashboard', { replace: true });
           }, 100);
-          
         } else {
           console.error('No token found in URL params');
           setError('No access token received from authentication provider');

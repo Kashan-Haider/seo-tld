@@ -20,6 +20,8 @@ import GenerateKeywords from './pages/GenerateKeywords';
 import SavedKeywords from './pages/SavedKeywords';
 import CompetitorAnalysis from './pages/CompetitorAnalysis';
 import SavedAnalyses from './pages/SavedAnalyses';
+import Billing from './pages/Billing';
+import Profile from './pages/Profile';
 import type { AuthContextType } from './typing';
 
 
@@ -41,6 +43,30 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   const [user, setUser] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Helper to fetch user profile from backend
+  const fetchUserProfile = async (token: string) => {
+    try {
+      const response = await fetch('/api/auth/me', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data);
+        return data;
+      } else {
+        setUser(null);
+        return null;
+      }
+    } catch (error) {
+      setUser(null);
+      return null;
+    }
+  };
+
   const validateToken = async (token: string): Promise<boolean> => {
     try {
       const response = await fetch('/api/auth/validate-token', {
@@ -54,65 +80,62 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       if (response.ok) {
         const data = await response.json();
         if (data.valid) {
-          setUser({
-            id: data.user_id,
-            email: data.email,
-            ...data.payload
-          });
+          // Fetch full user profile after token validation
+          await fetchUserProfile(token);
           return true;
         }
       }
+      setUser(null);
       return false;
     } catch (error) {
+      setUser(null);
       console.error('Token validation error:', error);
       return false;
     }
   };
 
   const refreshToken = async (): Promise<boolean> => {
-    const token = localStorage.getItem('access_token');
-    if (!token) {
-      console.log('No token found in localStorage');
+    // Try to use refresh_token from localStorage if available
+    const refreshToken = localStorage.getItem('refresh_token');
+    if (!refreshToken) {
+      console.log('No refresh token found in localStorage');
       return false;
     }
-
-    // Clean the token (remove quotes if present)
-    const cleanToken = token.replace(/^["']|["']$/g, '');
-    console.log('Attempting to refresh token:', cleanToken.substring(0, 20) + '...');
-    console.log('Token length:', cleanToken.length);
-    console.log('Full token:', cleanToken);
-
     try {
       const response = await fetch('/api/auth/refresh-token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ access_token: cleanToken })
+        body: JSON.stringify({ refresh_token: refreshToken })
       });
-
       if (response.ok) {
         const data = await response.json();
         localStorage.setItem('access_token', data.access_token);
+        localStorage.setItem('refresh_token', data.refresh_token);
+        // Fetch user profile after refreshing token
+        await fetchUserProfile(data.access_token);
         return await validateToken(data.access_token);
       }
-      console.log('Refresh failed with status:', response.status);
-      const errorText = await response.text();
-      console.log('Error response:', errorText);
       return false;
     } catch (error) {
-      console.error('Token refresh error:', error);
       return false;
     }
   };
 
-  const login = (token: string) => {
-    localStorage.setItem('access_token', token);
+  // Accept both tokens, store both
+  const login = async (accessToken: string, refreshToken?: string) => {
+    localStorage.setItem('access_token', accessToken);
+    if (refreshToken) {
+      localStorage.setItem('refresh_token', refreshToken);
+    }
     setIsAuthenticated(true);
+    await fetchUserProfile(accessToken);
   };
 
   const logout = () => {
     localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
     setIsAuthenticated(false);
     setUser(null);
   };
@@ -257,6 +280,8 @@ const App = () => {
             <Route path="/project/:id" element={<div>Project Details Page (Coming Soon)</div>} />
             <Route path="/audit/:auditId/opportunities" element={<Opportunities />} />
             <Route path="/audit/:auditId/diagnostics" element={<Diagnostics />} />
+            <Route path="/billing" element={<Billing />} />
+            <Route path="/profile" element={<Profile />} />
             {/* Add more protected routes here */}
           </Route>
 

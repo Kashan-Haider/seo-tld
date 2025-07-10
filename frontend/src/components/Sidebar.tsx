@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSidebarStore } from '../store/sidebarStore';
-import { Home, Folder, Table, CreditCard, User, LogIn, UserPlus, KeyRound, BarChart3 } from 'lucide-react';
+import { Home, Folder, Table, CreditCard, User, LogIn, UserPlus, KeyRound, BarChart3, LogOut } from 'lucide-react';
+import { useAuth } from '../App';
 
 const navItems = [
   { label: 'Dashboard', icon: <Home size={20} />, path: '/' },
@@ -9,11 +10,9 @@ const navItems = [
   { label: 'Generate Keywords', icon: <KeyRound size={20} />, path: '/generate-keywords' },
   { label: 'Long Tail Keywords', icon: <KeyRound size={20} />, path: '/long-tail-keywords' },
   { label: 'Competitor Analysis', icon: <BarChart3 size={20} />, path: '/competitor-analysis' },
-  { label: 'Tables', icon: <Table size={20} />, path: '/' },
-  { label: 'Billing', icon: <CreditCard size={20} />, path: '/' },
-  { label: 'Profile', icon: <User size={20} />, path: '/' },
-  { label: 'Sign In', icon: <LogIn size={20} />, path: '/login' },
-  { label: 'Sign Up', icon: <UserPlus size={20} />, path: '/signup' },
+  { label: 'Billing', icon: <CreditCard size={20} />, path: '/billing' },
+  { label: 'Profile', icon: <User size={20} />, path: '/profile' },
+  // Log Out will be handled separately
 ];
 
 const Sidebar: React.FC = () => {
@@ -21,6 +20,7 @@ const Sidebar: React.FC = () => {
   const isOpen = useSidebarStore((state) => state.isOpen);
   const closeSidebar = useSidebarStore((state) => state.close);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const { logout } = useAuth();
 
   // Prevent scrolling when sidebar is open on mobile
   useEffect(() => {
@@ -39,6 +39,12 @@ const Sidebar: React.FC = () => {
   const handleNavigation = (path: string) => {
     navigate(path);
     closeSidebar();
+  };
+
+  const handleLogout = () => {
+    logout();
+    closeSidebar();
+    navigate('/login');
   };
 
   return (
@@ -76,6 +82,12 @@ const Sidebar: React.FC = () => {
                   <span className="text-xl">{item.icon}</span> {item.label}
                 </button>
               ))}
+              <button
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-white/80 hover:bg-red-500/20 hover:text-red-400 transition-all duration-200 font-medium text-lg active:scale-95"
+                onClick={handleLogout}
+              >
+                <span className="text-xl"><LogOut size={20} /></span> Log Out
+              </button>
             </nav>
             <div className="mt-auto bg-gradient-to-tr from-accent-blue via-light-purple to-accent-blue rounded-2xl p-4 shadow-xl text-white text-center">
               <div className="font-bold mb-2">Need help?</div>
@@ -100,6 +112,12 @@ const Sidebar: React.FC = () => {
               <span className="text-xl">{item.icon}</span> {item.label}
             </button>
           ))}
+          <button
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-white/80 hover:bg-red-500/20 hover:text-red-400 transition font-medium text-lg"
+            onClick={handleLogout}
+          >
+            <span className="text-xl"><LogOut size={20} /></span> Log Out
+          </button>
         </nav>
         <div className="mt-auto bg-gradient-to-tr from-accent-blue via-light-purple to-accent-blue rounded-2xl p-4 shadow-xl text-white text-center">
           <div className="font-bold mb-2">Need help?</div>

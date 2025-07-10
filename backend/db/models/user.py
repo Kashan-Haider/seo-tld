@@ -18,7 +18,16 @@ class User(Base):
     verification_token_expiry = Column(DateTime(timezone=True), nullable=True)
     reset_password_token = Column(String(255), nullable=True)
     reset_password_token_expiry = Column(DateTime(timezone=True), nullable=True)
+    refresh_token = Column(String(512), nullable=True)
+    refresh_token_expiry = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    auth_provider = Column(String(32), default='local', nullable=False)  # 'local' or 'google'
     
     projects = relationship("Project", back_populates="owner", cascade="all, delete-orphan")
+
+    # Always store email in lowercase
+    def __init__(self, *args, **kwargs):
+        if 'email' in kwargs and kwargs['email']:
+            kwargs['email'] = kwargs['email'].lower()
+        super().__init__(*args, **kwargs)

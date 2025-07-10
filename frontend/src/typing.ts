@@ -40,9 +40,11 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   user: any;
   loading: boolean;
-  login: (token: string) => void;
+  login: (accessToken: string, refreshToken?: string) => void;
   logout: () => void;
   refreshToken: () => Promise<boolean>;
+  // Optionally, you can add refresh_token to the context if you want to expose it
+  // refresh_token?: string;
 }
 
 export interface ProjectCardProps {
