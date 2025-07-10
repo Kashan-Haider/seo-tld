@@ -7,7 +7,7 @@ interface AuditLoadingScreenProps {
   progress?: number; // 0-100
 }
 
-const AuditLoadingScreen: React.FC<AuditLoadingScreenProps> = ({ message, progress = 0 }) => {
+const AuditLoadingScreen: React.FC<AuditLoadingScreenProps> = ({ message }) => {
   return (
     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-dark-blue via-medium-blue to-dark-blue relative overflow-hidden">
       {/* 3D Loader & Progress */}

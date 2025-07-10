@@ -107,8 +107,6 @@ const PerformanceHistory: React.FC<PerformanceHistoryProps> = ({ chartData, allA
         throw new Error('Failed to fetch audit data');
       }
 
-      const auditData = await response.json();
-      
       // Create a formatted JSON file for download
       const downloadData = {
         audit_id: audit.id,

@@ -22,7 +22,7 @@ const intentColors: Record<string, string> = {
   navigational: "text-yellow-400"
 };
 
-const SavedKeywordBox: React.FC<SavedKeywordBoxProps> = ({ kw, isSaved, onSaveChange }) => {
+const SavedKeywordBox: React.FC<SavedKeywordBoxProps> = ({ kw, onSaveChange }) => {
   return (
     <div className="relative bg-gradient-to-br from-dark-blue via-medium-blue to-dark-blue rounded-2xl shadow-xl border border-white/10 p-6 flex flex-col gap-2 min-h-[180px] transition-all duration-200 hover:scale-[1.02]">
       <div className="flex items-center justify-between mb-2">

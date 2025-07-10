@@ -16,8 +16,6 @@ const stepLabels = [
   'Results',
 ];
 
-const accent = 'from-accent-blue via-light-purple to-accent-blue';
-
 // Utility to convert analysisResult to CSV
 function analysisResultToCSV(result: any): string {
   if (!result) return '';
@@ -85,7 +83,6 @@ const CompetitorAnalysis: React.FC = () => {
 
   // Step 3: Competitor keywords extraction & content gap
   const [competitorKeywords, setCompetitorKeywords] = useState<{[url: string]: string[]}>({});
-  const [gapTaskId, setGapTaskId] = useState<string | null>(null);
   const [gapLoading, setGapLoading] = useState(false);
   const [gapError, setGapError] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
@@ -198,7 +195,6 @@ const CompetitorAnalysis: React.FC = () => {
       });
       if (!res2.ok) throw new Error('Failed to start content gap analysis');
       const { task_id: gapTaskId } = await res2.json();
-      setGapTaskId(gapTaskId);
       // Poll for result
       let gapResult = null;
       for (let i = 0; i < 210; i++) { // up to 210s
@@ -457,7 +453,7 @@ const CompetitorAnalysis: React.FC = () => {
                   <div className="text-white/70 italic">No competitor keywords found.</div>
                 ) : (
                   <div className="space-y-6">
-                    {competitorUrls.map((url, idx) => (
+                    {competitorUrls.map((url) => (
                       <div key={url} className="bg-gradient-to-r from-medium-blue/60 to-dark-blue rounded-xl p-4 shadow border border-white/10">
                         <div className="text-accent-blue font-semibold mb-2 break-all">{url}</div>
                         {competitorKeywords[url] && competitorKeywords[url].length > 0 ? (

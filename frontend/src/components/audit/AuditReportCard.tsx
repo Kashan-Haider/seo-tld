@@ -1,5 +1,5 @@
 import React from 'react';
-import { RadialBarChart, RadialBar, PolarAngleAxis, ResponsiveContainer } from 'recharts';
+import { RadialBarChart, RadialBar, PolarAngleAxis } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { ExternalLink } from 'lucide-react';
 import type { AuditReportCardProps, Opportunity } from '../../typing';

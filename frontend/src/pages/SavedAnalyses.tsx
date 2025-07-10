@@ -119,7 +119,7 @@ const SavedAnalyses: React.FC = () => {
                 <div className="text-white/70 italic">No competitor keywords found.</div>
               ) : (
                 <div className="space-y-6">
-                  {selected.competitor_urls.map((url: string, idx: number) => (
+                  {selected.competitor_urls.map((url: string) => (
                     <div key={url} className="bg-gradient-to-r from-medium-blue/60 to-dark-blue rounded-xl p-4 shadow border border-white/10">
                       <div className="text-accent-blue font-semibold mb-2 break-all">{url}</div>
                       {selected.competitor_keywords[url] && selected.competitor_keywords[url].length > 0 ? (

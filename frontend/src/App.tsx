@@ -1,26 +1,27 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, useEffect, createContext, useContext, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import Login from './pages/auth/Login';
-import Signup from './pages/auth/Signup';
-import CreateProject from './pages/projects/CreateProject';
-import AuthCallback from './pages/auth/AuthCallback'; // make sure this path is correct
-import VerifyEmail from './pages/auth/VerifyEmail';
-import CheckEmail from './pages/auth/CheckEmail';
-import ForgotPassword from './pages/auth/ForgotPassword';
-import ResetPassword from './pages/auth/ResetPassword';
-import Dashboard from './pages/Dashboard';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
-import Projects from './pages/projects/Projects';
-import Opportunities from './pages/audit/Opportunities';
-import Diagnostics from './pages/audit/Diagnostics';
-import GenerateKeywords from './pages/GenerateKeywords';
-import SavedKeywords from './pages/SavedKeywords';
-import CompetitorAnalysis from './pages/CompetitorAnalysis';
-import SavedAnalyses from './pages/SavedAnalyses';
-import Billing from './pages/Billing';
-import Profile from './pages/Profile';
+// Replace static imports with React.lazy for pages
+const Login = React.lazy(() => import('./pages/auth/Login'));
+const Signup = React.lazy(() => import('./pages/auth/Signup'));
+const CreateProject = React.lazy(() => import('./pages/projects/CreateProject'));
+const AuthCallback = React.lazy(() => import('./pages/auth/AuthCallback'));
+const VerifyEmail = React.lazy(() => import('./pages/auth/VerifyEmail'));
+const CheckEmail = React.lazy(() => import('./pages/auth/CheckEmail'));
+const ForgotPassword = React.lazy(() => import('./pages/auth/ForgotPassword'));
+const ResetPassword = React.lazy(() => import('./pages/auth/ResetPassword'));
+const Dashboard = React.lazy(() => import('./pages/Dashboard'));
+const Projects = React.lazy(() => import('./pages/projects/Projects'));
+const Opportunities = React.lazy(() => import('./pages/audit/Opportunities'));
+const Diagnostics = React.lazy(() => import('./pages/audit/Diagnostics'));
+const GenerateKeywords = React.lazy(() => import('./pages/GenerateKeywords'));
+const SavedKeywords = React.lazy(() => import('./pages/SavedKeywords'));
+const CompetitorAnalysis = React.lazy(() => import('./pages/CompetitorAnalysis'));
+const SavedAnalyses = React.lazy(() => import('./pages/SavedAnalyses'));
+const Billing = React.lazy(() => import('./pages/Billing'));
+const Profile = React.lazy(() => import('./pages/Profile'));
 import type { AuthContextType } from './typing';
 
 
@@ -254,38 +255,36 @@ const App = () => {
             },
           }}
         />
-        <Routes>
-          {/* Public routes */}
-          <Route path="/auth/callback" element={<AuthCallback />} />
-
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/auth/verify" element={<VerifyEmail />} />
-          <Route path="/check-email" element={<CheckEmail />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          
-          
-          {/* Protected routes */}
-          <Route element={<ProtectedLayout />}>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/create-project" element={<CreateProject />} />
-            <Route path="/projects" element={<Projects/>} />
-            <Route path="/generate-keywords" element={<GenerateKeywords />} />
-            <Route path="/saved-keywords" element={<SavedKeywords />} />
-            <Route path="/competitor-analysis" element={<CompetitorAnalysis />} />
-            <Route path="/saved-analyses" element={<SavedAnalyses />} />
-            <Route path="/project/:id" element={<div>Project Details Page (Coming Soon)</div>} />
-            <Route path="/audit/:auditId/opportunities" element={<Opportunities />} />
-            <Route path="/audit/:auditId/diagnostics" element={<Diagnostics />} />
-            <Route path="/billing" element={<Billing />} />
-            <Route path="/profile" element={<Profile />} />
-            {/* Add more protected routes here */}
-          </Route>
-
-          {/* Redirect root to Dashboard if not matched */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-dark-blue text-white text-lg">Loading...</div>}>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/auth/verify" element={<VerifyEmail />} />
+            <Route path="/check-email" element={<CheckEmail />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            {/* Protected routes */}
+            <Route element={<ProtectedLayout />}>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/create-project" element={<CreateProject />} />
+              <Route path="/projects" element={<Projects />} />
+              <Route path="/generate-keywords" element={<GenerateKeywords />} />
+              <Route path="/saved-keywords" element={<SavedKeywords />} />
+              <Route path="/competitor-analysis" element={<CompetitorAnalysis />} />
+              <Route path="/saved-analyses" element={<SavedAnalyses />} />
+              <Route path="/project/:id" element={<div>Project Details Page (Coming Soon)</div>} />
+              <Route path="/audit/:auditId/opportunities" element={<Opportunities />} />
+              <Route path="/audit/:auditId/diagnostics" element={<Diagnostics />} />
+              <Route path="/billing" element={<Billing />} />
+              <Route path="/profile" element={<Profile />} />
+              {/* Add more protected routes here */}
+            </Route>
+            {/* Redirect root to Dashboard if not matched */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </Router>
     </AuthProvider>
   );

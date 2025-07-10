@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSidebarStore } from '../store/sidebarStore';
-import { Home, Folder, Table, CreditCard, User, LogIn, UserPlus, KeyRound, BarChart3, LogOut } from 'lucide-react';
+import { Home, Folder, CreditCard, User, KeyRound, BarChart3, LogOut } from 'lucide-react';
 import { useAuth } from '../App';
 
 const navItems = [

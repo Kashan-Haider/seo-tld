@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../App';
 
 // 3D Space SVG Components (reuse from Login)
 const FloatingPlanet = () => (
@@ -59,7 +58,6 @@ const Signup: React.FC = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, message: '' });
   const navigate = useNavigate();
-  const { user } = useAuth();
 
   const checkPasswordStrength = (password: string) => {
     let score = 0;
@@ -131,24 +129,6 @@ const Signup: React.FC = () => {
     } catch (err: any) {
       setError('Google signup failed. Please try again.');
       setGoogleLoading(false);
-    }
-  };
-
-  const getPasswordStrengthColor = () => {
-    switch (passwordStrength.score) {
-      case 0:
-      case 1:
-        return 'bg-red-500';
-      case 2:
-        return 'bg-orange-500';
-      case 3:
-        return 'bg-yellow-500';
-      case 4:
-        return 'bg-blue-500';
-      case 5:
-        return 'bg-green-500';
-      default:
-        return 'bg-gray-500';
     }
   };
 

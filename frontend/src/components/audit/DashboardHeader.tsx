@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Grid3X3, Calendar, Globe } from 'lucide-react';
+import { Grid3X3, Calendar, Globe } from 'lucide-react';
 
 interface DashboardHeaderProps {
   dropdownOpen: boolean;

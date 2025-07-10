@@ -12,7 +12,6 @@ import DashboardLoadingScreen from '../components/DashboardLoadingScreen';
 import AuditLoadingScreen from '../components/AuditLoadingScreen';
 
 const Dashboard: React.FC = () => {
-  const [latestAudit, setLatestAudit] = useState<any>(null);
   const [allAudits, setAllAudits] = useState<any[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [projectsLoading, setProjectsLoading] = useState(true);
@@ -69,16 +68,13 @@ const Dashboard: React.FC = () => {
       if (res.ok) {
         const data = await res.json();
         setAllAudits(data);
-        setLatestAudit(data[0] || null);
         setSelectedAudit(data[0] || null);
       } else {
         setAllAudits([]);
-        setLatestAudit(null);
         setSelectedAudit(null);
       }
     } catch (error) {
       setAllAudits([]);
-      setLatestAudit(null);
       setSelectedAudit(null);
     } finally {
       setAuditsLoading(false);
