@@ -40,6 +40,7 @@ const SavedAnalyses: React.FC = () => {
   }, [selectedProject]);
   
   const selected = analyses.find(a => a.id === selectedId);
+  console.log(selected)
   
   const handleDeleteClick = (analysis: any) => {
     setAnalysisToDelete(analysis);
@@ -144,17 +145,26 @@ const SavedAnalyses: React.FC = () => {
               <ul className="space-y-4">
                 {selected.content_gaps && selected.content_gaps.map((gap: any, idx: number) => (
                   <li key={idx} className="bg-gradient-to-r from-medium-blue/70 to-dark-blue rounded-xl p-5 shadow-lg border border-white/10">
-                    {gap && typeof gap === 'object' && gap.title && gap.description ? (
-                      <div>
-                        <div className="font-bold text-accent-blue mb-1 text-lg">{gap.title}</div>
-                        <div className="text-white/90">{gap.description}</div>
+                    {gap && typeof gap === 'object' && gap.gap_topic ? (
+                      <div className="space-y-3">
+                        <div className="font-bold text-accent-blue text-lg">{gap.gap_topic}</div>
+                        {gap.why_it_matters && (
+                          <div className="text-white/90">
+                            <span className="font-semibold text-white">Why it matters:</span> {gap.why_it_matters}
+                          </div>
+                        )}
+                        {gap.competitor_reference && (
+                          <div className="text-white/70 text-sm">
+                            <span className="font-semibold">Competitor Reference:</span> {gap.competitor_reference}
+                          </div>
+                        )}
                       </div>
                     ) : typeof gap === 'string' ? (
                       <span className="text-white/90 text-base">{gap}</span>
                     ) : (
-                      <div>
-                        {gap.gap_type && <div className="font-bold text-accent-blue mb-1 text-lg">{gap.gap_type}</div>}
-                        {gap.explanation && <div className="mb-1 text-white/90"><span className="font-semibold">Why it matters:</span> {gap.explanation}</div>}
+                      <div className="space-y-2">
+                        {gap.gap_type && <div className="font-bold text-accent-blue text-lg">{gap.gap_type}</div>}
+                        {gap.explanation && <div className="text-white/90"><span className="font-semibold">Why it matters:</span> {gap.explanation}</div>}
                         {gap.seo_impact && <div className="text-green-400"><span className="font-semibold">SEO Impact:</span> {gap.seo_impact}</div>}
                       </div>
                     )}
@@ -173,13 +183,32 @@ const SavedAnalyses: React.FC = () => {
                     {typeof rec === 'string' ? (
                       <span className="text-white/90 text-base">{rec}</span>
                     ) : (
-                      <div>
-                        {rec.title && <div className="font-bold text-accent-blue mb-1 text-lg">{rec.title}</div>}
+                      <div className="space-y-3">
+                        {rec.title && <div className="font-bold text-accent-blue text-lg">{rec.title}</div>}
                         {rec.detail && <div className="text-white/90">{rec.detail}</div>}
-                        {/* Render other fields if present */}
-                        {Object.keys(rec).filter((k: string) => k !== 'title' && k !== 'detail').map((k: string) => (
-                          <div key={k} className="text-white/70"><span className="font-semibold">{k}:</span> {String(rec[k])}</div>
-                        ))}
+                        {rec.priority && (
+                          <div className="text-white/70">
+                            <span className="font-semibold">Priority:</span> 
+                            <span className={`ml-2 px-2 py-1 rounded text-xs font-medium ${
+                              rec.priority === 'high' ? 'bg-red-500/20 text-red-300' :
+                              rec.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-300' :
+                              'bg-green-500/20 text-green-300'
+                            }`}>
+                              {rec.priority.toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                        {rec.estimated_impact && (
+                          <div className="text-white/70">
+                            <span className="font-semibold">Estimated Impact:</span> {rec.estimated_impact}
+                          </div>
+                        )}
+                        {rec.implementation_steps && (
+                          <div className="text-white/70">
+                            <span className="font-semibold">Implementation Steps:</span>
+                            <div className="mt-1 text-sm">{rec.implementation_steps}</div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </li>

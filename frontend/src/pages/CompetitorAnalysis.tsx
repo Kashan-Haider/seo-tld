@@ -22,12 +22,13 @@ function analysisResultToCSV(result: any): string {
   // Content Gaps
   const gapRows = (result.content_gaps || []).map((gap: any) => {
     if (typeof gap === 'string') {
-      return ['Content Gap', gap, '', ''];
+      return ['Content Gap', gap, '', '', ''];
     } else {
       return [
         'Content Gap',
-        gap.gap_type || '',
-        gap.explanation || '',
+        gap.gap_topic || gap.gap_type || '',
+        gap.why_it_matters || gap.explanation || '',
+        gap.competitor_reference || '',
         gap.seo_impact || ''
       ];
     }
@@ -35,20 +36,19 @@ function analysisResultToCSV(result: any): string {
   // Recommendations
   const recRows = (result.recommendations || []).map((rec: any) => {
     if (typeof rec === 'string') {
-      return ['Recommendation', rec, '', ''];
+      return ['Recommendation', rec, '', '', '', ''];
     } else {
       return [
         'Recommendation',
         rec.title || '',
         rec.detail || '',
-        Object.keys(rec)
-          .filter(k => k !== 'title' && k !== 'detail')
-          .map(k => `${k}: ${String(rec[k])}`)
-          .join('; ')
+        rec.priority || '',
+        rec.estimated_impact || '',
+        rec.implementation_steps || ''
       ];
     }
   });
-  const header = ['Type', 'Title/Gap', 'Detail/Explanation', 'SEO Impact/Other'];
+  const header = ['Type', 'Title/Gap Topic', 'Detail/Why it Matters', 'Competitor Reference/Priority', 'SEO Impact/Estimated Impact', 'Implementation Steps'];
   const rows = [header, ...gapRows, ...recRows];
   return rows.map(row => row.map((field: string) => `"${(field || '').replace(/"/g, '""')}"`).join(',')).join('\n');
 }
@@ -89,6 +89,7 @@ const CompetitorAnalysis: React.FC = () => {
   const [loadingScreen, setLoadingScreen] = useState<null | { type: 'competitor' | 'gap', progress: number, message: string }>(null);
   const { selectedProject } = useProjectStore();
   const [saving, setSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   // Step 1: Extract keywords from user URL
   const handleExtractKeywords = async () => {
@@ -98,6 +99,7 @@ const CompetitorAnalysis: React.FC = () => {
     }
     setKeywordsLoading(true);
     setKeywordsError(null);
+    setIsSaved(false); // Reset saved state when starting new analysis
     try {
       const token = localStorage.getItem('access_token');
       const res = await fetch('/api/competitor-analysis/extract-keywords', {
@@ -258,6 +260,7 @@ const CompetitorAnalysis: React.FC = () => {
         throw new Error(data.detail || 'Failed to save analysis');
       }
       toast.success('Analysis saved successfully!');
+      setIsSaved(true);
     } catch (err: any) {
       toast.error(err.message || 'Failed to save analysis');
     } finally {
@@ -480,12 +483,16 @@ const CompetitorAnalysis: React.FC = () => {
                       Download CSV
                     </button>
                     <button
-                      className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg border border-blue-400/30 transition-all duration-200 flex items-center gap-2 disabled:opacity-60"
+                      className={`px-6 py-3 rounded-xl font-bold shadow-lg border transition-all duration-200 flex items-center gap-2 disabled:opacity-60 ${
+                        isSaved 
+                          ? 'bg-green-600 text-white border-green-400/30 cursor-not-allowed' 
+                          : 'bg-blue-600 hover:bg-blue-700 text-white border-blue-400/30'
+                      }`}
                       onClick={handleSaveAnalysis}
-                      disabled={saving || !analysisResult}
+                      disabled={saving || !analysisResult || isSaved}
                     >
                       <Save size={20} />
-                      {saving ? 'Saving...' : 'Save Analysis'}
+                      {saving ? 'Saving...' : isSaved ? 'Saved' : 'Save Analysis'}
                     </button>
                   </div>
                   <div className="w-full flex flex-col gap-8">
@@ -496,17 +503,26 @@ const CompetitorAnalysis: React.FC = () => {
                       <ul className="space-y-4">
                         {analysisResult.content_gaps && analysisResult.content_gaps.map((gap: any, idx: number) => (
                           <li key={idx} className="bg-gradient-to-r from-medium-blue/70 to-dark-blue rounded-xl p-5 shadow-lg border border-white/10">
-                            {gap && typeof gap === 'object' && gap.title && gap.description ? (
-                              <div>
-                                <div className="font-bold text-accent-blue mb-1 text-lg">{gap.title}</div>
-                                <div className="text-white/90">{gap.description}</div>
+                            {gap && typeof gap === 'object' && gap.gap_topic ? (
+                              <div className="space-y-3">
+                                <div className="font-bold text-accent-blue text-lg">{gap.gap_topic}</div>
+                                {gap.why_it_matters && (
+                                  <div className="text-white/90">
+                                    <span className="font-semibold text-white">Why it matters:</span> {gap.why_it_matters}
+                                  </div>
+                                )}
+                                {gap.competitor_reference && (
+                                  <div className="text-white/70 text-sm">
+                                    <span className="font-semibold">Competitor Reference:</span> {gap.competitor_reference}
+                                  </div>
+                                )}
                               </div>
                             ) : typeof gap === 'string' ? (
                               <span className="text-white/90 text-base">{gap}</span>
                             ) : (
-                              <div>
-                                {gap.gap_type && <div className="font-bold text-accent-blue mb-1 text-lg">{gap.gap_type}</div>}
-                                {gap.explanation && <div className="mb-1 text-white/90"><span className="font-semibold">Why it matters:</span> {gap.explanation}</div>}
+                              <div className="space-y-2">
+                                {gap.gap_type && <div className="font-bold text-accent-blue text-lg">{gap.gap_type}</div>}
+                                {gap.explanation && <div className="text-white/90"><span className="font-semibold">Why it matters:</span> {gap.explanation}</div>}
                                 {gap.seo_impact && <div className="text-green-400"><span className="font-semibold">SEO Impact:</span> {gap.seo_impact}</div>}
                               </div>
                             )}
@@ -524,13 +540,32 @@ const CompetitorAnalysis: React.FC = () => {
                             {typeof rec === 'string' ? (
                               <span className="text-white/90 text-base">{rec}</span>
                             ) : (
-                              <div>
-                                {rec.title && <div className="font-bold text-accent-blue mb-1 text-lg">{rec.title}</div>}
+                              <div className="space-y-3">
+                                {rec.title && <div className="font-bold text-accent-blue text-lg">{rec.title}</div>}
                                 {rec.detail && <div className="text-white/90">{rec.detail}</div>}
-                                {/* Render other fields if present */}
-                                {Object.keys(rec).filter(k => k !== 'title' && k !== 'detail').map(k => (
-                                  <div key={k} className="text-white/70"><span className="font-semibold">{k}:</span> {String(rec[k])}</div>
-                                ))}
+                                {rec.priority && (
+                                  <div className="text-white/70">
+                                    <span className="font-semibold">Priority:</span> 
+                                    <span className={`ml-2 px-2 py-1 rounded text-xs font-medium ${
+                                      rec.priority === 'high' ? 'bg-red-500/20 text-red-300' :
+                                      rec.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-300' :
+                                      'bg-green-500/20 text-green-300'
+                                    }`}>
+                                      {rec.priority.toUpperCase()}
+                                    </span>
+                                  </div>
+                                )}
+                                {rec.estimated_impact && (
+                                  <div className="text-white/70">
+                                    <span className="font-semibold">Estimated Impact:</span> {rec.estimated_impact}
+                                  </div>
+                                )}
+                                {rec.implementation_steps && (
+                                  <div className="text-white/70">
+                                    <span className="font-semibold">Implementation Steps:</span>
+                                    <div className="mt-1 text-sm">{rec.implementation_steps}</div>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </li>
@@ -545,7 +580,10 @@ const CompetitorAnalysis: React.FC = () => {
               <div className="flex flex-col md:flex-row gap-4 mt-8 w-full">
                 <button
                   className="w-full md:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-accent-blue via-light-purple to-accent-blue text-white font-bold shadow-lg hover:shadow-accent-blue/30 hover:scale-105 transition-all duration-300 text-lg flex items-center justify-center gap-3"
-                  onClick={() => setStep(1)}
+                  onClick={() => {
+                    setStep(1);
+                    setIsSaved(false); // Reset saved state when starting new analysis
+                  }}
                 >
                   <Globe size={22} /> Start New Analysis
                 </button>
