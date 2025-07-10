@@ -3,22 +3,14 @@ from sse_starlette.sse import EventSourceResponse
 from pydantic import BaseModel
 from typing import List, Optional
 from services.KeywordGenerationService import KeywordGenerationService
-from services.long_tail_keyword_service import LongTailKeywordService
-from db.models.Schemas import KeywordSuggestionRequest, KeywordSuggestion, KeywordSuggestionResponse, LongTailKeywordRequest, LongTailKeywordResponse, KeywordResponse, SaveKeywordRequest
+from db.models.Schemas import KeywordSuggestionRequest, KeywordSuggestion, KeywordSuggestionResponse, KeywordResponse, SaveKeywordRequest
 from db.database import get_db
 from db.models.keyword import Keyword as KeywordModel
 import uuid
 
 router = APIRouter(prefix="/keywords", tags=["keywords"])
 
-@router.post("/long-tail", response_model=LongTailKeywordResponse)
-def generate_long_tail_keywords(request: LongTailKeywordRequest):
-    keywords = LongTailKeywordService.generate_long_tail_keywords(
-        seed=request.seed,
-        lang=request.lang or 'en',
-        country=request.country or 'us'
-    )
-    return LongTailKeywordResponse(keywords=sorted(list(keywords)))
+# Removed long tail keyword endpoint
 
 @router.post("/suggestions", response_model=KeywordSuggestionResponse)
 def generate_keyword_suggestions(request: KeywordSuggestionRequest):

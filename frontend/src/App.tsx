@@ -15,7 +15,6 @@ import Navbar from './components/Navbar';
 import Projects from './pages/projects/Projects';
 import Opportunities from './pages/audit/Opportunities';
 import Diagnostics from './pages/audit/Diagnostics';
-import LongTailKeywords from './pages/LongTailKeywords';
 import GenerateKeywords from './pages/GenerateKeywords';
 import SavedKeywords from './pages/SavedKeywords';
 import CompetitorAnalysis from './pages/CompetitorAnalysis';
@@ -272,7 +271,6 @@ const App = () => {
             <Route path="/" element={<Dashboard />} />
             <Route path="/create-project" element={<CreateProject />} />
             <Route path="/projects" element={<Projects/>} />
-            <Route path="/long-tail-keywords" element={<LongTailKeywords />} />
             <Route path="/generate-keywords" element={<GenerateKeywords />} />
             <Route path="/saved-keywords" element={<SavedKeywords />} />
             <Route path="/competitor-analysis" element={<CompetitorAnalysis />} />

@@ -147,14 +147,6 @@ class AuditReportResponse(BaseModel):
         from_attributes = True
 
 # Keyword Suggestion Schemas
-class LongTailKeywordRequest(BaseModel):
-    seed: str
-    lang: Optional[str] = 'en'
-    country: Optional[str] = 'us'
-
-class LongTailKeywordResponse(BaseModel):
-    keywords: List[str]
-
 class KeywordSuggestionRequest(BaseModel):
     seed: str
     lang: Optional[str] = 'en'
