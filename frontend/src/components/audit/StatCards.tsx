@@ -1,21 +1,35 @@
 import React from 'react';
 import { TrendingUp, Smartphone, Monitor, Zap, Clock, Activity } from 'lucide-react';
 
-interface StatCardProps {
-  icon: React.ReactNode;
-  label: string;
-  value: string | number;
-  color: string;
+interface TrendIndicatorProps {
   trend?: 'up' | 'down';
   trendValue?: string;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ icon, label, value, color, trend, trendValue }) => (
-  <div className={`flex flex-col items-start justify-between bg-gradient-to-br from-dark-blue via-medium-blue to-dark-blue rounded-2xl border border-white/10 p-4 min-w-[180px] w-full`} >
-    <div className="flex items-center gap-2 mb-2">{icon}<span className="text-xs text-white/60 font-semibold">{label}</span></div>
+const TrendIndicator: React.FC<TrendIndicatorProps> = ({ trend, trendValue }) => {
+  if (!trend || !trendValue) return null;
+  console.log(trendValue)
+  return (
+    <span className={` font-bold ${trend === 'up' ? 'text-green-400' : 'text-red-400'}`}>{trend === 'up' ? '▲' : '▼'} {trendValue == '+NaN%' ? '0%' : trendValue}</span>
+  );
+};
+
+interface StatCardProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string | number;
+  trend?: 'up' | 'down';
+  trendValue?: string;
+}
+
+const StatCard: React.FC<StatCardProps> = ({ icon, label, value, trend, trendValue }) => (
+  <div className={
+    'flex flex-col items-start justify-between bg-gradient-to-br from-dark-blue via-medium-blue to-dark-blue rounded-2xl border border-white/10 p-4 min-w-[180px] w-full'
+  }>
+    <div className="flex items-center gap-2 mb-2">{icon}<span className="text-white/60 font-semibold">{label}</span></div>
     <div className="flex items-end gap-2">
-      <span className="text-2xl font-bold text-white">{value}</span>
-      {trend && <span className={`text-xs font-bold ${trend === 'up' ? 'text-green-400' : 'text-red-400'}`}>{trend === 'up' ? '▲' : '▼'} {trendValue}</span>}
+      <span className="text-3xl font-bold text-white">{value}</span>
+      <TrendIndicator trend={trend} trendValue={trendValue} />
     </div>
   </div>
 );
@@ -30,10 +44,8 @@ const calculateTrend = (current: number, previous: number): { trend: 'up' | 'dow
   if (previous === null || previous === undefined || current === null || current === undefined) {
     return null;
   }
-  
   const difference = current - previous;
   const percentageChange = ((difference / previous) * 100);
-  
   return {
     trend: difference >= 0 ? 'up' : 'down',
     trendValue: `${difference >= 0 ? '+' : ''}${percentageChange.toFixed(1)}%`
@@ -46,7 +58,6 @@ const StatCards: React.FC<StatCardsProps> = ({ latestAudit, secondLatestAudit })
       icon: <TrendingUp size={22} className="text-accent-blue" />, 
       label: 'Overall Score', 
       value: latestAudit.overall_score, 
-      color: '#3b82f6', 
       ...calculateTrend(latestAudit.overall_score, secondLatestAudit?.overall_score)
     },
     {
