@@ -53,6 +53,31 @@ function analysisResultToCSV(result: any): string {
   return rows.map(row => row.map((field: string) => `"${(field || '').replace(/"/g, '""')}"`).join(',')).join('\n');
 }
 
+// Normalization function for recommendations
+function normalizeRecommendations(recs: any[]): any[] {
+  return (recs || []).map(rec => {
+    if (typeof rec === 'string') return rec;
+    // Handle backend format with recommendation_area, action_item, etc.
+    if ('recommendation_area' in rec) {
+      return {
+        title: rec.recommendation_area || '',
+        detail: rec.action_item || '',
+        priority: '', // Not present in backend, set to empty
+        estimated_impact: rec.seo_benefit || '',
+        implementation_steps: rec.competitor_inspiration || ''
+      };
+    }
+    // Handle expected frontend format
+    return {
+      title: rec.title || '',
+      detail: rec.detail || '',
+      priority: rec.priority || '',
+      estimated_impact: rec.estimated_impact || '',
+      implementation_steps: rec.implementation_steps || ''
+    };
+  });
+}
+
 function downloadAnalysisCSV(result: any) {
   const csv = analysisResultToCSV(result);
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -347,7 +372,7 @@ const CompetitorAnalysis: React.FC = () => {
           })}
         </div>
         {/* Card Container */}
-        <div className="w-full bg-gradient-to-br from-dark-blue via-medium-blue to-dark-blue rounded-2xl shadow-2xl border border-white/10 p-8 flex flex-col gap-8 items-center">
+        <div className="w-full bg-gradient-to-br from-dark-blue via-medium-blue to-dark-blue rounded-2xl shadow-2xl border border-white/10 p-8 flex flex-col gap-8 items-center max-w-full overflow-x-auto">
           {/* Step 1: User URL */}
           {step === 1 && (
             <div className="w-full flex flex-col items-center gap-6">
@@ -462,7 +487,7 @@ const CompetitorAnalysis: React.FC = () => {
                         {competitorKeywords[url] && competitorKeywords[url].length > 0 ? (
                           <ul className="flex flex-wrap gap-2">
                             {competitorKeywords[url].map((kw, i) => (
-                              <li key={i} className="bg-accent-blue/20 text-accent-blue px-3 py-1 rounded-lg text-sm font-medium shadow-sm">{kw}</li>
+                              <li key={i} className="bg-accent-blue/20 text-accent-blue px-3 py-1 rounded-lg text-sm font-medium shadow-sm break-words">{kw}</li>
                             ))}
                           </ul>
                         ) : (
@@ -502,28 +527,28 @@ const CompetitorAnalysis: React.FC = () => {
                       </h3>
                       <ul className="space-y-4">
                         {analysisResult.content_gaps && analysisResult.content_gaps.map((gap: any, idx: number) => (
-                          <li key={idx} className="bg-gradient-to-r from-medium-blue/70 to-dark-blue rounded-xl p-5 shadow-lg border border-white/10">
+                          <li key={idx} className="bg-gradient-to-r from-medium-blue/70 to-dark-blue rounded-xl p-5 shadow-lg border border-white/10 break-words">
                             {gap && typeof gap === 'object' && gap.gap_topic ? (
                               <div className="space-y-3">
-                                <div className="font-bold text-accent-blue text-lg">{gap.gap_topic}</div>
+                                <div className="font-bold text-accent-blue text-lg break-words">{gap.gap_topic}</div>
                                 {gap.why_it_matters && (
-                                  <div className="text-white/90">
+                                  <div className="text-white/90 break-words">
                                     <span className="font-semibold text-white">Why it matters:</span> {gap.why_it_matters}
                                   </div>
                                 )}
                                 {gap.competitor_reference && (
-                                  <div className="text-white/70 text-sm">
+                                  <div className="text-white/70 text-sm break-all">
                                     <span className="font-semibold">Competitor Reference:</span> {gap.competitor_reference}
                                   </div>
                                 )}
                               </div>
                             ) : typeof gap === 'string' ? (
-                              <span className="text-white/90 text-base">{gap}</span>
+                              <span className="text-white/90 text-base break-words">{gap}</span>
                             ) : (
                               <div className="space-y-2">
-                                {gap.gap_type && <div className="font-bold text-accent-blue text-lg">{gap.gap_type}</div>}
-                                {gap.explanation && <div className="text-white/90"><span className="font-semibold">Why it matters:</span> {gap.explanation}</div>}
-                                {gap.seo_impact && <div className="text-green-400"><span className="font-semibold">SEO Impact:</span> {gap.seo_impact}</div>}
+                                {gap.gap_type && <div className="font-bold text-accent-blue text-lg break-words">{gap.gap_type}</div>}
+                                {gap.explanation && <div className="text-white/90 break-words"><span className="font-semibold">Why it matters:</span> {gap.explanation}</div>}
+                                {gap.seo_impact && <div className="text-green-400 break-words"><span className="font-semibold">SEO Impact:</span> {gap.seo_impact}</div>}
                               </div>
                             )}
                           </li>
@@ -535,37 +560,21 @@ const CompetitorAnalysis: React.FC = () => {
                         <Users size={22} className="text-accent-blue" /> Recommendations
                       </h3>
                       <ul className="space-y-4">
-                        {analysisResult.recommendations && analysisResult.recommendations.map((rec: any, idx: number) => (
-                          <li key={idx} className="bg-gradient-to-r from-medium-blue/70 to-dark-blue rounded-xl p-5 shadow-lg border border-white/10">
+                        {normalizeRecommendations(analysisResult.recommendations).map((rec: any, idx: number) => (
+                          <li key={idx} className="bg-gradient-to-r from-medium-blue/70 to-dark-blue rounded-xl p-5 shadow-lg border border-white/10 break-words">
                             {typeof rec === 'string' ? (
-                              <span className="text-white/90 text-base">{rec}</span>
+                              <span className="text-white/90 text-base break-words">{rec}</span>
                             ) : (
                               <div className="space-y-3">
-                                {rec.title && <div className="font-bold text-accent-blue text-lg">{rec.title}</div>}
-                                {rec.detail && <div className="text-white/90">{rec.detail}</div>}
-                                {rec.priority && (
-                                  <div className="text-white/70">
-                                    <span className="font-semibold">Priority:</span> 
-                                    <span className={`ml-2 px-2 py-1 rounded text-xs font-medium ${
-                                      rec.priority === 'high' ? 'bg-red-500/20 text-red-300' :
-                                      rec.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-300' :
-                                      'bg-green-500/20 text-green-300'
-                                    }`}>
-                                      {rec.priority.toUpperCase()}
-                                    </span>
-                                  </div>
-                                )}
-                                {rec.estimated_impact && (
-                                  <div className="text-white/70">
-                                    <span className="font-semibold">Estimated Impact:</span> {rec.estimated_impact}
-                                  </div>
-                                )}
-                                {rec.implementation_steps && (
-                                  <div className="text-white/70">
-                                    <span className="font-semibold">Implementation Steps:</span>
-                                    <div className="mt-1 text-sm">{rec.implementation_steps}</div>
-                                  </div>
-                                )}
+                                <div className="font-bold text-accent-blue text-lg break-words">{rec.title}</div>
+                                <div className="text-white/90 break-words">{rec.detail}</div>
+                                <div className="text-white/70 break-words">
+                                  <span className="font-semibold">Estimated Impact:</span> {rec.estimated_impact}
+                                </div>
+                                <div className="text-white/70 break-words">
+                                  <span className="font-semibold">Implementation Steps:</span>
+                                  <div className="mt-1 text-sm break-words">{rec.implementation_steps}</div>
+                                </div>
                               </div>
                             )}
                           </li>
