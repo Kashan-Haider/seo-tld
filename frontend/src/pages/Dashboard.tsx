@@ -248,7 +248,12 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="w-full bg-dark-blue">
+    <div className="w-full bg-dark-blue min-h-screen">
+      {/*
+        NOTE: If you have a Sidebar component, ensure it uses:
+        className="hidden lg:block"
+        so it is hidden on screens smaller than lg.
+      */}
       <DashboardHeader
         dropdownOpen={dropdownOpen}
         setDropdownOpen={setDropdownOpen}
@@ -263,7 +268,7 @@ const Dashboard: React.FC = () => {
         isGeneratingAudit={isGeneratingAudit}
         handleGenerateAudit={handleGenerateAudit}
       />
-      <main className="block bg-dark-blue/90 px-4 lg:px-8 py-8 w-full">
+      <main className="block bg-dark-blue/90 px-2 sm:px-4 lg:px-8 py-6 w-full">
         {selectedProject && allAudits.length === 0 ? (
           <div className="flex flex-col items-center justify-center w-full">
             <NoAudits
@@ -275,8 +280,10 @@ const Dashboard: React.FC = () => {
           </div>
         ) : (
           <>
-            <StatCards latestAudit={selectedAudit} secondLatestAudit={allAudits.length > 1 ? allAudits[1] : null} />
-            <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8 items-center lg:items-start">
+            <div className="w-full overflow-x-auto">
+              <StatCards latestAudit={selectedAudit} secondLatestAudit={allAudits.length > 1 ? allAudits[1] : null} />
+            </div>
+            <div className="w-full grid grid-cols-1 gap-8 mb-8 items-center lg:grid-cols-3 lg:items-start">
               <div className="col-span-2 flex flex-col gap-6">
                 <AuditReportCard
                   auditId={selectedAudit?.id?.toString() || 'latest'}
@@ -289,9 +296,13 @@ const Dashboard: React.FC = () => {
                   pagespeed_data={selectedAudit?.pagespeed_data}
                 />
               </div>
-              <MetricsTrends chartData={chartData} />
+              <div className="w-full overflow-x-auto">
+                <MetricsTrends chartData={chartData} />
+              </div>
             </div>
-            <PerformanceHistory chartData={chartData} allAudits={allAudits} onAuditDeleted={handleAuditDeleted} />
+            <div className="w-full overflow-x-auto">
+              <PerformanceHistory chartData={chartData} allAudits={allAudits} onAuditDeleted={handleAuditDeleted} />
+            </div>
           </>
         )}
       </main>
