@@ -500,26 +500,7 @@ const CompetitorAnalysis: React.FC = () => {
               </div>
               {analysisResult ? (
                 <>
-                  <div className="flex flex-row gap-4 mb-4">
-                    <button
-                      className="px-6 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold shadow-lg border border-green-400/30 transition-all duration-200 flex items-center gap-2"
-                      onClick={() => downloadAnalysisCSV(analysisResult)}
-                    >
-                      Download CSV
-                    </button>
-                    <button
-                      className={`px-6 py-3 rounded-xl font-bold shadow-lg border transition-all duration-200 flex items-center gap-2 disabled:opacity-60 ${
-                        isSaved 
-                          ? 'bg-green-600 text-white border-green-400/30 cursor-not-allowed' 
-                          : 'bg-blue-600 hover:bg-blue-700 text-white border-blue-400/30'
-                      }`}
-                      onClick={handleSaveAnalysis}
-                      disabled={saving || !analysisResult || isSaved}
-                    >
-                      <Save size={20} />
-                      {saving ? 'Saving...' : isSaved ? 'Saved' : 'Save Analysis'}
-                    </button>
-                  </div>
+                 
                   <div className="w-full flex flex-col gap-8">
                     <div className="w-full">
                       <h3 className="font-bold text-xl text-white mb-3 flex items-center gap-2">
@@ -581,6 +562,26 @@ const CompetitorAnalysis: React.FC = () => {
                         ))}
                       </ul>
                     </div>
+                  </div>
+                  <div className="flex flex-row gap-4 mb-4">
+                    <button
+                      className="px-6 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold shadow-lg border border-green-400/30 transition-all duration-200 flex items-center gap-2"
+                      onClick={() => downloadAnalysisCSV(analysisResult)}
+                    >
+                      Download CSV
+                    </button>
+                    <button
+                      className={`px-6 py-3 rounded-xl font-bold shadow-lg border transition-all duration-200 flex items-center gap-2 disabled:opacity-60 ${
+                        isSaved 
+                          ? 'bg-green-600 text-white border-green-400/30 cursor-not-allowed' 
+                          : 'bg-blue-600 hover:bg-blue-700 text-white border-blue-400/30'
+                      }`}
+                      onClick={handleSaveAnalysis}
+                      disabled={saving || !analysisResult || isSaved}
+                    >
+                      <Save size={20} />
+                      {saving ? 'Saving...' : isSaved ? 'Saved' : 'Save Analysis'}
+                    </button>
                   </div>
                 </>
               ) : (
