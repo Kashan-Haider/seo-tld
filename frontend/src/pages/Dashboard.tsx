@@ -8,8 +8,8 @@ import MetricsTrends from '../components/audit/MetricsTrends';
 import PerformanceHistory from '../components/audit/PerformanceHistory';
 import NoAudits from './NoAudits';
 import { useNavigate } from 'react-router-dom';
-import DashboardLoadingScreen from '../components/DashboardLoadingScreen';
-import AuditLoadingScreen from '../components/AuditLoadingScreen';
+import DashboardLoadingScreen from '../components/AuditLoadingScreen';
+import AuditLoadingScreen from '../components/DashboardLoadingScreen';
 
 const Dashboard: React.FC = () => {
   const [allAudits, setAllAudits] = useState<any[]>([]);
@@ -236,7 +236,7 @@ const Dashboard: React.FC = () => {
   }, [allAudits]);
 
   if ((isGeneratingAudit || isPollingAudit) && selectedProject) {
-    return <DashboardLoadingScreen message={auditTaskStatus || 'Generating audit...'} progress={auditTaskProgress} />;
+    return <AuditLoadingScreen message={auditTaskStatus || 'Generating audit...'} progress={auditTaskProgress} />;
   }
 
   if (projectsLoading) {
@@ -244,7 +244,7 @@ const Dashboard: React.FC = () => {
   }
 
   if (auditsLoading) {
-    return <AuditLoadingScreen message="Loading audits..." progress={0} />;
+    return <DashboardLoadingScreen message="Loading audits..." progress={0} />;
   }
 
   return (

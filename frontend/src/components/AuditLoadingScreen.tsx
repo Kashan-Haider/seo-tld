@@ -1,5 +1,3 @@
-// AuditLoadingScreen.tsx
-// 3D animated loading screen for audit loading states
 import React from 'react';
 
 interface AuditLoadingScreenProps {
@@ -10,7 +8,7 @@ interface AuditLoadingScreenProps {
 const AuditLoadingScreen: React.FC<AuditLoadingScreenProps> = ({ message }) => {
   return (
     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-dark-blue via-medium-blue to-dark-blue relative overflow-hidden">
-      {/* 3D Loader & Progress */}
+      {/* 3D Loader */}
       <div className="relative flex flex-col items-center gap-10 z-10">
         {/* 3D Orbital Loader with floating cubes */}
         <div className="relative w-48 h-48 flex items-center justify-center">
@@ -42,7 +40,7 @@ const AuditLoadingScreen: React.FC<AuditLoadingScreenProps> = ({ message }) => {
           </div>
         </div>
         <div className="text-2xl md:text-3xl font-extrabold text-white animate-pulse-fade mt-2">
-          {message || 'Loading audit data...'}
+          {message || 'Loading projects...'}
         </div>
       </div>
       {/* Futuristic Grid Background */}
