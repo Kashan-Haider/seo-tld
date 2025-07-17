@@ -34,7 +34,7 @@ const KeywordBox: React.FC<KeywordBoxProps> = ({ kw, isSaved, onSaveChange, proj
       const isUUID = typeof id === 'string' && /^[0-9a-fA-F-]{36}$/.test(id);
       const payload = isUUID ? { ...kw, project_id: projectId } : { ...rest, project_id: projectId };
       if (!isUUID) delete (payload as any).id;
-      const res = await fetch("/api/keywords/save", {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/keywords/save`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -50,9 +50,22 @@ const KeywordBox: React.FC<KeywordBoxProps> = ({ kw, isSaved, onSaveChange, proj
     }
   };
 
-  const handleUnsave = () => {
-    onSaveChange(kw.keyword, false);
-    toast.success('Keyword removed from saved list.');
+  const handleUnsave = async () => {
+    if (!kw.id || !/^([0-9a-fA-F-]{36})$/.test(kw.id)) {
+      toast.error('Cannot unsave keyword: missing id.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/keywords/delete/${kw.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to unsave keyword');
+      onSaveChange(kw.id, false);
+      toast.success('Keyword removed from saved list.');
+    } catch (e) {
+      toast.error('Failed to unsave keyword. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

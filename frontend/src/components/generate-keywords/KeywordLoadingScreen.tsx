@@ -76,7 +76,7 @@ const KeywordLoadingScreen: React.FC<KeywordLoadingScreenProps> = ({ step, total
             {percent}%
           </div>
         </div>
-        <div className="mt-2 text-xl font-bold text-white animate-pulse-fade">
+        <div className="mt-2 text-xl font-bold text-white animate-pulse-fade text-center">
           {message || stepMessages[step - 1] || "Working..."}
         </div>
         <div className="text-white/80 text-sm animate-fade-in">

@@ -43,6 +43,11 @@ const GenerateKeywords: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [progressMsg, setProgressMsg] = useState("");
 
+  // Utility function to get a unique key for a keyword
+  const getKeywordKey = (kw: KeywordSimpleObject) => {
+    return (kw.id && /^[0-9a-fA-F-]{36}$/.test(kw.id)) ? kw.id : kw.keyword;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -109,24 +114,28 @@ const GenerateKeywords: React.FC = () => {
     }
   };
 
-  const handleSaveChange = async (keyword: string, isNowSaved: boolean) => {
-    setSaved(prev => ({ ...prev, [keyword]: isNowSaved }));
-    if (!isNowSaved) {
-      // Find the keyword object by keyword string
-      const kwObj = keywords.find(kw => kw.keyword === keyword);
-      // If it has a valid UUID id, delete from backend
-      if (kwObj && typeof kwObj.id === 'string' && /^[0-9a-fA-F-]{36}$/.test(kwObj.id)) {
-        try {
-          const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/keywords/delete/${kwObj.id}`, { method: 'DELETE' });
-          if (!res.ok) throw new Error('Failed to unsave keyword');
-        } catch (e) {
-          // Optionally show error toast here
-        }
-      }
+  const handleSaveChange = async (idOrKeyword: string, isNowSaved: boolean) => {
+    if (isNowSaved) {
+      // Saving: idOrKeyword is the keyword string
+      const kwObj = keywords.find(kw => kw.keyword === idOrKeyword);
+      if (!kwObj) return;
+      const key = getKeywordKey(kwObj);
+      if (saved[key]) return;
+      setSaved(prev => ({ ...prev, [key]: true }));
+    } else {
+      // Unsaving: idOrKeyword is the id
+      const kwObj = keywords.find(kw => kw.id === idOrKeyword);
+      if (!kwObj) return;
+      const key = getKeywordKey(kwObj);
+      setSaved(prev => {
+        const newSaved = { ...prev };
+        delete newSaved[key];
+        return newSaved;
+      });
       // Remove id from the keyword object in the keywords array
       setKeywords(prev =>
         prev.map(kw =>
-          kw.keyword === keyword
+          kw.id === idOrKeyword
             ? { ...kw, id: '' }
             : kw
         )
@@ -262,9 +271,9 @@ const GenerateKeywords: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {keywords.map((kw, i) => (
                 <KeywordBox
-                  key={kw.keyword + i}
-                  kw={kw} // do not set id here
-                  isSaved={!!saved[kw.keyword]}
+                  key={getKeywordKey(kw) + i}
+                  kw={kw}
+                  isSaved={!!saved[getKeywordKey(kw)]}
                   onSaveChange={handleSaveChange}
                   projectId={projectId}
                 />

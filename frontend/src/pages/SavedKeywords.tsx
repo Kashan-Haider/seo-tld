@@ -165,7 +165,7 @@ const SavedKeywords: React.FC = () => {
       {/* Confirmation Dialog */}
       {confirmUnsaveId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="bg-dark-blue rounded-2xl p-8 shadow-2xl border border-white/20 max-w-sm w-full flex flex-col items-center">
+          <div className="bg-dark-blue rounded-2xl p-8 shadow-2xl border border-white/20 mx-5 w-full flex flex-col items-center">
             <div className="text-white text-lg font-bold mb-4">Remove Keyword?</div>
             <div className="text-white/80 mb-6 text-center">Are you sure you want to unsave this keyword? This action cannot be undone.</div>
             <div className="flex gap-4 w-full justify-center">
