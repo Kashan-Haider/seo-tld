@@ -279,7 +279,6 @@ const App = () => {
               <Route path="/audit/:auditId/diagnostics" element={<Diagnostics />} />
               <Route path="/billing" element={<Billing />} />
               <Route path="/profile" element={<Profile />} />
-              {/* Add more protected routes here */}
             </Route>
             {/* Redirect root to Dashboard if not matched */}
             <Route path="*" element={<Navigate to="/" replace />} />
