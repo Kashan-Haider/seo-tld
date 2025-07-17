@@ -53,7 +53,7 @@ const GenerateKeywords: React.FC = () => {
     try {
       const token = localStorage.getItem('access_token');
       // Step 1: Start async keyword generation task
-      const startRes = await fetch('/api/keywords/suggestions-async', {
+      const startRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/keywords/suggestions-async`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -75,7 +75,7 @@ const GenerateKeywords: React.FC = () => {
       let done = false;
       while (!done) {
         await new Promise(res => setTimeout(res, 1200));
-        const pollRes = await fetch(`/api/keywords/task-status/${task_id}`, {
+        const pollRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/keywords/task-status/${task_id}`, {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
@@ -117,7 +117,7 @@ const GenerateKeywords: React.FC = () => {
       // If it has a valid UUID id, delete from backend
       if (kwObj && typeof kwObj.id === 'string' && /^[0-9a-fA-F-]{36}$/.test(kwObj.id)) {
         try {
-          const res = await fetch(`/api/keywords/delete/${kwObj.id}`, { method: 'DELETE' });
+          const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/keywords/delete/${kwObj.id}`, { method: 'DELETE' });
           if (!res.ok) throw new Error('Failed to unsave keyword');
         } catch (e) {
           // Optionally show error toast here

@@ -21,7 +21,7 @@ const SavedAnalyses: React.FC = () => {
       setError(null);
       try {
         const token = localStorage.getItem('access_token');
-        const res = await fetch(`/api/competitor-analysis/all?project_id=${selectedProject.id}`, {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/competitor-analysis/all?project_id=${selectedProject.id}`, {
           headers: {
             ...(token ? { 'Authorization': `Bearer ${token}` } : {})
           }
@@ -51,7 +51,7 @@ const SavedAnalyses: React.FC = () => {
     setDeletingId(analysisToDelete.id);
     try {
       const token = localStorage.getItem('access_token');
-      const res = await fetch(`/api/competitor-analysis/delete-analysis/${analysisToDelete.id}`, {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/competitor-analysis/delete-analysis/${analysisToDelete.id}`, {
         method: 'DELETE',
         headers: {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})

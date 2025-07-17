@@ -104,7 +104,7 @@ const Signup: React.FC = () => {
       return;
     }
     try {
-      const res = await fetch('/api/auth/signup', {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email, password, full_name: fullName }),
@@ -125,7 +125,7 @@ const Signup: React.FC = () => {
     setGoogleLoading(true);
     setError('');
     try {
-      window.location.href = '/api/auth/google-login';
+      window.location.href = `${import.meta.env.VITE_BACKEND_URL}/auth/google-login`;
     } catch (err: any) {
       setError('Google signup failed. Please try again.');
       setGoogleLoading(false);

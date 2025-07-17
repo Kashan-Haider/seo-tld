@@ -96,7 +96,7 @@ const PerformanceHistory: React.FC<PerformanceHistoryProps> = ({ chartData, allA
     
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`/api/audit/by-id/${audit.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/audit/by-id/${audit.id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -149,7 +149,7 @@ const PerformanceHistory: React.FC<PerformanceHistoryProps> = ({ chartData, allA
     setDeletingAuditId(auditToDelete.id);
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`/api/audit/${auditToDelete.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/audit/${auditToDelete.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

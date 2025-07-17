@@ -38,9 +38,9 @@ const AuthCallback: React.FC = () => {
           }
           // Store both tokens and redirect to dashboard
           await login(token, refreshToken);
-          console.log('Login successful, redirecting to dashboard...');
+          console.log('Login successful, redirecting to home...');
           setTimeout(() => {
-            navigate('/dashboard', { replace: true });
+            navigate('/', { replace: true });
           }, 100);
         } else if (token) {
           // Fallback: only access token present (legacy)
@@ -51,7 +51,7 @@ const AuthCallback: React.FC = () => {
           }
           await login(token);
           setTimeout(() => {
-            navigate('/dashboard', { replace: true });
+            navigate('/', { replace: true });
           }, 100);
         } else {
           console.error('No token found in URL params');

@@ -17,7 +17,7 @@ const Projects: React.FC = () => {
       setError('');
       try {
         const token = localStorage.getItem('access_token');
-        const res = await fetch('/api/project/all-projects', {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/project/all-projects`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',

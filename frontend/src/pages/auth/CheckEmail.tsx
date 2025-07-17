@@ -12,7 +12,7 @@ const CheckEmail: React.FC = () => {
     setError('');
     setMessage('');
     try {
-      const res = await fetch('/api/auth/resend-verification', {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/resend-verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),

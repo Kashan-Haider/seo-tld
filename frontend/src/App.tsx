@@ -46,7 +46,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   // Helper to fetch user profile from backend
   const fetchUserProfile = async (token: string) => {
     try {
-      const response = await fetch('/api/auth/me', {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/me`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -69,7 +69,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
   const validateToken = async (token: string): Promise<boolean> => {
     try {
-      const response = await fetch('/api/auth/validate-token', {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/validate-token`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -102,7 +102,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       return false;
     }
     try {
-      const response = await fetch('/api/auth/refresh-token', {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/refresh-token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

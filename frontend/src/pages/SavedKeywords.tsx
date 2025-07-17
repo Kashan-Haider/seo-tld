@@ -54,7 +54,7 @@ const SavedKeywords: React.FC = () => {
   useEffect(() => {
     if (!projectId) return;
     setLoading(true);
-    fetch(`/api/keywords/saved/${projectId}`)
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/keywords/saved/${projectId}`)
       .then(res => res.json())
       .then(data => setSavedKeywords(data || []))
       .finally(() => setLoading(false));
@@ -80,7 +80,7 @@ const SavedKeywords: React.FC = () => {
   const handleUnsave = async (id: string) => {
     setUnsaveLoading(true);
     try {
-      const res = await fetch(`/api/keywords/delete/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/keywords/delete/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to unsave keyword');
       setSavedKeywords(prev => prev.filter(kw => kw.id !== id));
       toast.success('Keyword removed from saved list.');

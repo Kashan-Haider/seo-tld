@@ -124,7 +124,7 @@ oauth.register(
 async def google_login(request: Request):
     try:
         # Use environment variable for redirect URI
-        redirect_uri = os.getenv("GOOGLE_REDIRECT_URI", f"{BACKEND_URL}/auth/google-auth")
+        redirect_uri = os.getenv("GOOGLE_REDIRECT_URI", f"http://localhost:8000/auth/google-auth")
         if oauth.google is None:
             logging.error("Google OAuth client not configured.")
             return
@@ -260,10 +260,11 @@ def refresh_token(request: RefreshTokenRequest, db: Session = Depends(get_db)):
             logging.warning(f"Email mismatch: {user.email} != {email}")
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User email mismatch")
         # Check if refresh token matches and is not expired
-        if user.refresh_token != request.refresh_token:
+        if getattr(user, 'refresh_token') != request.refresh_token:
             logging.warning("Refresh token does not match stored token")
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token does not match")
-        if user.refresh_token_expiry is None or datetime.now(timezone.utc) > user.refresh_token_expiry:
+        expiry = getattr(user, 'refresh_token_expiry')
+        if expiry is None or datetime.now(timezone.utc) > expiry:
             logging.warning("Refresh token expired")
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token expired")
         # Issue new tokens

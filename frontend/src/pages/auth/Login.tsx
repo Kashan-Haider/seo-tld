@@ -62,7 +62,7 @@ const Login: React.FC = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -72,7 +72,7 @@ const Login: React.FC = () => {
         throw new Error(data.detail || 'Login failed');
       }
       login(data.access_token);
-      navigate('/dashboard');
+      navigate('/');
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred');
     } finally {
@@ -84,7 +84,7 @@ const Login: React.FC = () => {
     setGoogleLoading(true);
     setError('');
     try {
-      window.location.href = '/api/auth/google-login';
+      window.location.href = `${import.meta.env.VITE_BACKEND_URL}/auth/google-login`;
     } catch (err: any) {
       setError('Google login failed. Please try again.');
       setGoogleLoading(false);

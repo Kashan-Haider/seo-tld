@@ -59,7 +59,7 @@ const Dashboard: React.FC = () => {
     try {
       setAuditsLoading(true);
       const token = localStorage.getItem('access_token');
-      const res = await fetch(`/api/audit/get-all-audits/${projectId}`, {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/audit/get-all-audits/${projectId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -92,7 +92,7 @@ const Dashboard: React.FC = () => {
       setIsPollingAudit(false);
       const token = localStorage.getItem('access_token');
       if (!selectedProject) throw new Error('No project selected');
-      const res = await fetch('/api/audit', {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/audit`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -123,7 +123,7 @@ const Dashboard: React.FC = () => {
     const poll = async () => {
       try {
         const token = localStorage.getItem('access_token');
-        const res = await fetch(`/api/audit/task-status/${auditTaskId}`, {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/audit/task-status/${auditTaskId}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -178,7 +178,7 @@ const Dashboard: React.FC = () => {
     setProjectsLoading(true);
     try {
       const token = localStorage.getItem('access_token');
-      const res = await fetch('/api/project/all-projects', {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/project/all-projects`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',

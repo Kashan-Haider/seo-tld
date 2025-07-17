@@ -30,7 +30,7 @@ const Opportunities: React.FC<OpportunitiesPageProps> = ({ auditId: propAuditId 
 
       try {
         const token = localStorage.getItem('access_token');
-        const response = await fetch(`/api/audit/by-id/${auditId}`, {
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/audit/by-id/${auditId}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

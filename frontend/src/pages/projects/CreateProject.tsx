@@ -22,7 +22,7 @@ const CreateProject: React.FC = () => {
       if (!token) {
         throw new Error('Authentication required');
       }
-      const res = await fetch('/api/project/create-project', {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/project/create-project`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

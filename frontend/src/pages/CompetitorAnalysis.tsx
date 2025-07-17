@@ -50,7 +50,18 @@ function analysisResultToCSV(result: any): string {
   });
   const header = ['Type', 'Title/Gap Topic', 'Detail/Why it Matters', 'Competitor Reference/Priority', 'SEO Impact/Estimated Impact', 'Implementation Steps'];
   const rows = [header, ...gapRows, ...recRows];
-  return rows.map(row => row.map((field: string) => `"${(field || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+  return rows
+    .map(row =>
+      row
+        .map((field: any) => {
+          let value = field;
+          if (value === undefined || value === null) value = '';
+          if (typeof value !== 'string') value = JSON.stringify(value);
+          return `"${value.replace(/"/g, '""')}"`;
+        })
+        .join(',')
+    )
+    .join('\n');
 }
 
 // Normalization function for recommendations
@@ -127,7 +138,7 @@ const CompetitorAnalysis: React.FC = () => {
     setIsSaved(false); // Reset saved state when starting new analysis
     try {
       const token = localStorage.getItem('access_token');
-      const res = await fetch('/api/competitor-analysis/extract-keywords', {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/competitor-analysis/extract-keywords`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -152,7 +163,7 @@ const CompetitorAnalysis: React.FC = () => {
     setCompetitorsError(null);
     try {
       const token = localStorage.getItem('access_token');
-      const res = await fetch('/api/competitor-analysis/competitors', {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/competitor-analysis/competitors`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -180,7 +191,7 @@ const CompetitorAnalysis: React.FC = () => {
     try {
       const token = localStorage.getItem('access_token');
       // 1. Extract competitor keywords (async task)
-      const res1 = await fetch('/api/competitor-analysis/keywords-for-competitors', {
+      const res1 = await fetch(`${import.meta.env.VITE_BACKEND_URL}/competitor-analysis/keywords-for-competitors`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -195,7 +206,7 @@ const CompetitorAnalysis: React.FC = () => {
       for (let i = 0; i < 210; i++) { // up to 210s
         setLoadingScreen({ type: 'competitor', progress: Math.round((i / 210) * 100), message: `Extracting competitor keywords for ${competitorUrls.length} competitors... (${i + 1}s)` });
         await new Promise(r => setTimeout(r, 1000));
-        const pollRes = await fetch(`/api/competitor-analysis/keywords-task-status/${keywordsTaskId}`, {
+        const pollRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/competitor-analysis/keywords-task-status/${keywordsTaskId}`, {
           headers: {
             ...(token ? { 'Authorization': `Bearer ${token}` } : {})
           }
@@ -212,7 +223,7 @@ const CompetitorAnalysis: React.FC = () => {
       setCompetitorKeywords(keywordsResult);
       setLoadingScreen({ type: 'gap', progress: 0, message: 'Analyzing content gaps and recommendations...' });
       // 2. Analyze content gap (async task)
-      const res2 = await fetch('/api/competitor-analysis/content-gap-analysis', {
+      const res2 = await fetch(`${import.meta.env.VITE_BACKEND_URL}/competitor-analysis/content-gap-analysis`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -227,7 +238,7 @@ const CompetitorAnalysis: React.FC = () => {
       for (let i = 0; i < 210; i++) { // up to 210s
         setLoadingScreen({ type: 'gap', progress: Math.round((i / 210) * 100), message: `Analyzing content gaps and recommendations... (${i + 1}s)` });
         await new Promise(r => setTimeout(r, 1000));
-        const pollRes = await fetch(`/api/competitor-analysis/content-gap-task-status/${gapTaskId}`, {
+        const pollRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/competitor-analysis/content-gap-task-status/${gapTaskId}`, {
           headers: {
             ...(token ? { 'Authorization': `Bearer ${token}` } : {})
           }
@@ -261,6 +272,7 @@ const CompetitorAnalysis: React.FC = () => {
   const handleSaveAnalysis = async () => {
     if (!selectedProject || !analysisResult) return;
     setSaving(true);
+    console.log("saving.....")
     try {
       const token = localStorage.getItem('access_token');
       const payload = {
@@ -272,7 +284,7 @@ const CompetitorAnalysis: React.FC = () => {
         recommendations: analysisResult.recommendations,
         analysis_type: 'full',
       };
-      const res = await fetch('/api/competitor-analysis/save-analysis', {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/competitor-analysis/save-analysis`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -563,15 +575,16 @@ const CompetitorAnalysis: React.FC = () => {
                       </ul>
                     </div>
                   </div>
-                  <div className="flex flex-row gap-4 mb-4">
+                  <div className="flex flex-col w-full md:flex-row gap-4 mb-4">
                     <button
-                      className="px-6 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold shadow-lg border border-green-400/30 transition-all duration-200 flex items-center gap-2"
+                      className="px-6 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold shadow-lg border border-green-400/30 transition-all duration-200 flex items-center justify-center gap-2"
                       onClick={() => downloadAnalysisCSV(analysisResult)}
                     >
                       Download CSV
                     </button>
+                    {selectedProject && selectedProject.id && (
                     <button
-                      className={`px-6 py-3 rounded-xl font-bold shadow-lg border transition-all duration-200 flex items-center gap-2 disabled:opacity-60 ${
+                        className={`justify-center px-6 py-3 rounded-xl font-bold shadow-lg border transition-all duration-200 flex items-center gap-2 disabled:opacity-60 ${
                         isSaved 
                           ? 'bg-green-600 text-white border-green-400/30 cursor-not-allowed' 
                           : 'bg-blue-600 hover:bg-blue-700 text-white border-blue-400/30'
@@ -582,6 +595,7 @@ const CompetitorAnalysis: React.FC = () => {
                       <Save size={20} />
                       {saving ? 'Saving...' : isSaved ? 'Saved' : 'Save Analysis'}
                     </button>
+                    )}
                   </div>
                 </>
               ) : (
