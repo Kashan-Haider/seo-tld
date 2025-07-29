@@ -13,14 +13,60 @@ const CreateProject: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [urlError, setUrlError] = useState('');
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  // URL validation function
+  const validateUrl = (url: string): string => {
+    if (!url.trim()) {
+      return 'Website URL is required';
+    }
+    
+    // Check if URL starts with http or https
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      return 'URL must start with http:// or https://';
+    }
+    
+    try {
+      const urlObj = new URL(url);
+      // Check if URL has a valid hostname
+      if (!urlObj.hostname || urlObj.hostname.length < 3) {
+        return 'Please enter a valid website URL';
+      }
+      
+      // Check for common invalid patterns
+      if (urlObj.hostname.includes('localhost') || urlObj.hostname.includes('127.0.0.1')) {
+        return 'Localhost URLs are not allowed. Please use a public website URL.';
+      }
+      
+      return '';
+    } catch (error) {
+      return 'Please enter a valid website URL';
+    }
+  };
+
+  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const url = e.target.value;
+    setWebsiteUrl(url);
+    setUrlError(validateUrl(url));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate URL before submission
+    const urlValidationError = validateUrl(websiteUrl);
+    if (urlValidationError) {
+      setUrlError(urlValidationError);
+      return;
+    }
+    
     setLoading(true);
     setError('');
     setSuccess('');
+    setUrlError('');
+    
     try {
       const token = localStorage.getItem('access_token');
       if (!token) {
@@ -100,12 +146,19 @@ const CreateProject: React.FC = () => {
             <input
               type="url"
               value={websiteUrl}
-              onChange={e => setWebsiteUrl(e.target.value)}
+              onChange={handleUrlChange}
               required
-              className="w-full p-3 rounded-xl bg-dark-blue/80 text-white border border-light-gray/20 focus:border-accent-blue focus:ring-2 focus:ring-accent-blue focus:outline-none transition-all shadow-inner shadow-accent-blue/10 hover:shadow-accent-blue/20"
+              className={`w-full p-3 rounded-xl bg-dark-blue/80 text-white border focus:ring-2 focus:ring-accent-blue focus:outline-none transition-all shadow-inner shadow-accent-blue/10 hover:shadow-accent-blue/20 ${
+                urlError ? 'border-red-500/50 focus:border-red-500' : 'border-light-gray/20 focus:border-accent-blue'
+              }`}
               placeholder="https://example.com"
               disabled={loading}
             />
+            {urlError && (
+              <div className="mt-2 text-red-400 text-sm">
+                {urlError}
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-light-gray mb-2 text-sm font-medium">Description</label>
@@ -129,7 +182,7 @@ const CreateProject: React.FC = () => {
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !!urlError}
               className="flex-1 bg-gradient-to-r from-accent-blue via-light-purple to-accent-blue text-white py-3 rounded-xl font-bold text-lg shadow-lg shadow-accent-blue/30 hover:scale-[1.03] hover:shadow-light-purple/40 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-accent-blue/30"
               style={{boxShadow: '0 2px 16px 0 #22d3ee44'}}
             >

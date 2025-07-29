@@ -111,6 +111,7 @@ const CompetitorAnalysis: React.FC = () => {
   const [userKeywords, setUserKeywords] = useState<string[]>([]);
   const [keywordsLoading, setKeywordsLoading] = useState(false);
   const [keywordsError, setKeywordsError] = useState<string | null>(null);
+  const [userUrlError, setUserUrlError] = useState<string | null>(null);
 
   // Step 2: Competitor URLs
   const [competitorUrls, setCompetitorUrls] = useState<string[]>([]);
@@ -127,14 +128,52 @@ const CompetitorAnalysis: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
 
+  // URL validation function
+  const validateUrl = (url: string): string | null => {
+    if (!url.trim()) {
+      return 'Please enter a website URL';
+    }
+    
+    // Check if URL starts with http or https
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      return 'URL must start with http:// or https://';
+    }
+    
+    try {
+      const urlObj = new URL(url);
+      // Check if URL has a valid hostname
+      if (!urlObj.hostname || urlObj.hostname.length < 3) {
+        return 'Please enter a valid website URL';
+      }
+      
+      // Check for common invalid patterns
+      if (urlObj.hostname.includes('localhost') || urlObj.hostname.includes('127.0.0.1')) {
+        return 'Localhost URLs are not allowed. Please use a public website URL.';
+      }
+      
+      return null;
+    } catch (error) {
+      return 'Please enter a valid website URL';
+    }
+  };
+
+  const handleUserUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const url = e.target.value;
+    setUserUrl(url);
+    setUserUrlError(validateUrl(url));
+  };
+
   // Step 1: Extract keywords from user URL
   const handleExtractKeywords = async () => {
-    if (!userUrl.trim() || !userUrl.startsWith('http')) {
-      setKeywordsError('Please enter a valid website URL (must start with http or https).');
+    const urlValidationError = validateUrl(userUrl);
+    if (urlValidationError) {
+      setUserUrlError(urlValidationError);
       return;
     }
+
     setKeywordsLoading(true);
     setKeywordsError(null);
+    setUserUrlError(null);
     setIsSaved(false); // Reset saved state when starting new analysis
     try {
       const token = localStorage.getItem('access_token');
@@ -394,22 +433,29 @@ const CompetitorAnalysis: React.FC = () => {
               </label>
               <input
                 type="text"
-                className="w-full max-w-md px-6 py-4 rounded-xl bg-gradient-to-r from-dark-blue/80 to-medium-blue text-white border border-white/10 focus:outline-none focus:border-accent-blue focus:ring-2 focus:ring-accent-blue/20 transition-all duration-300 text-lg backdrop-blur-sm shadow-lg"
+                className={`w-full max-w-md px-6 py-4 rounded-xl bg-gradient-to-r from-dark-blue/80 to-medium-blue text-white border focus:outline-none focus:ring-2 focus:ring-accent-blue/20 transition-all duration-300 text-lg backdrop-blur-sm shadow-lg ${
+                  userUrlError ? 'border-red-500/50 focus:border-red-500' : 'border-white/10 focus:border-accent-blue'
+                }`}
                 value={userUrl}
-                onChange={e => setUserUrl(e.target.value)}
+                onChange={handleUserUrlChange}
                 placeholder="https://yourwebsite.com"
                 disabled={keywordsLoading}
               />
+              {userUrlError && (
+                <div className="text-red-400 text-base mt-2 text-center max-w-md">
+                  {userUrlError}
+                </div>
+              )}
               <button
-                className="w-full max-w-md h-14 px-6 rounded-xl bg-gradient-to-r from-accent-blue via-light-purple to-accent-blue text-white font-bold shadow-lg hover:shadow-accent-blue/30 hover:scale-105 transition-all duration-300 text-lg flex items-center justify-center gap-3"
+                className="w-full max-w-md h-14 px-6 rounded-xl bg-gradient-to-r from-accent-blue via-light-purple to-accent-blue text-white font-bold shadow-lg hover:shadow-accent-blue/30 hover:scale-105 transition-all duration-300 text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={handleExtractKeywords}
-                disabled={keywordsLoading || !userUrl.trim() || !userUrl.startsWith('http')}
+                disabled={keywordsLoading || !userUrl.trim() || !!userUrlError}
               >
                 <KeyRound size={26} />
                 {keywordsLoading ? 'Extracting...' : 'Extract Keywords'}
               </button>
               {keywordsError && <div className="text-red-400 text-base mt-2">{keywordsError}</div>}
-              <div className="mt-2 text-white/70 text-sm text-center">Paste your homepage or main service page URL to get started. We’ll analyze your site and extract the most relevant keywords for your business.</div>
+              <div className="mt-2 text-white/70 text-sm text-center">Paste your homepage or main service page URL to get started. We'll analyze your site and extract the most relevant keywords for your business.</div>
             </div>
           )}
           {/* Step 2: Keywords */}
